@@ -1,0 +1,65 @@
+{
+  "schema": "new-project.intent/v3",
+  "ticket": "ticket-002",
+  "summary": "Remove stale grammar copy from Docker image",
+  "workstream": "infrastructure",
+  "classification": {
+    "kind": "BUG",
+    "priority": "P1",
+    "origin": "regression"
+  },
+  "allowedPaths": [
+    "Dockerfile",
+    "project/ticket-002/**",
+    "TODO.md",
+    "project/TICKETS.md"
+  ],
+  "forbiddenPaths": ["project/ticket-*/user-*.md"],
+  "stacks": ["docker"],
+  "dependsOn": [],
+  "conflictsWith": [],
+  "integrationTicket": null,
+  "delivery": {
+    "acceptedBaseSha": "65fa047a8323e57a76f6be3bd25163091d9e6112",
+    "targetBranch": "main",
+    "outcome": "A pinned Docker image build no longer depends on implementation directories being present in the bootstrap tree",
+    "nonGoals": [
+      "Do not modify contracts, runtime, event streams, error pages or Compose services",
+      "Do not add a runtime dependency or publish a release"
+    ],
+    "complexity": "XS",
+    "estimatedMinutes": 10,
+    "budgets": {
+      "maxImplementationFiles": 1,
+      "maxAffectedComponents": 1,
+      "maxPublicInterfaceChanges": 0,
+      "maxRuntimeDependencies": 0
+    },
+    "architecture": {
+      "status": "accepted",
+      "decision": "Use one repository COPY guarded by explicit COPY --exclude filters",
+      "components": [
+        {
+          "name": "container-build-context",
+          "paths": ["Dockerfile"]
+        }
+      ],
+      "responsibilityChanges": false,
+      "interfaceChanges": [],
+      "dataChanges": [],
+      "ui": {"impact": "none", "states": [], "evidence": []},
+      "rollback": "Revert Dockerfile before the dependent runtime is integrated"
+    },
+    "runtimeDependencies": [],
+    "validation": [
+      {
+        "criterion": "AC-04",
+        "commands": [
+          "docker build --tag wellmanifest-logs-bootstrap-check .",
+          "./project/governance-check.sh --actor agent"
+        ],
+        "evidence": "project/ticket-002/ai-codex-logs.txt"
+      }
+    ]
+  }
+}
