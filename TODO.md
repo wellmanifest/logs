@@ -2,11 +2,7 @@
 
 ## Active work
 
-- [ ] [`ticket-002`](project/ticket-002/README.md) — make the pinned Docker
-  bootstrap independent of not-yet-created implementation directories and
-  explicitly exclude local state from its image layer. State:
-  `IN_PROGRESS / PUBLICATION`; classification: `BUG / P1 / regression`; workstream:
-  `infrastructure`.
+No active tickets.
 
 ## Planned work
 
