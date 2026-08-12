@@ -4,3 +4,5 @@
 
 - Initial governance scaffold created.
 - No human participant identity or content was generated.
+- Replaced stale directory-specific image copies with one bounded repository
+  copy and explicit local-state exclusions.

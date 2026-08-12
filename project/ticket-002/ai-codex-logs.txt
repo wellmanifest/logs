@@ -1,0 +1,3 @@
+2026-08-12 PRE_IMPLEMENTATION_GATE base=65fa047a8323e57a76f6be3bd25163091d9e6112 result=PASS errors=0 warnings=0
+2026-08-12 DOCKER_BUILD context=working_tree image=wellmanifest-logs-bootstrap-check pinned_base=true result=PASS
+2026-08-12 IMAGE_EXCLUSION_CHECK paths=.git,.env,.venv,standard/__pycache__ result=PASS

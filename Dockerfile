@@ -5,12 +5,15 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 
 WORKDIR /workspace
 
-COPY contracts/ contracts/
-COPY grammar/ grammar/
-COPY proto/ proto/
-COPY standard/ standard/
-COPY logs/ logs/
-COPY errors/ errors/
+COPY --exclude=.git \
+     --exclude=.env \
+     --exclude=.venv \
+     --exclude=venv \
+     --exclude=**/__pycache__ \
+     --exclude=**/*.pyc \
+     --exclude=build \
+     --exclude=dist \
+     . .
 
 USER 65532:65532
 
