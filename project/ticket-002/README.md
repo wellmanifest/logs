@@ -3,7 +3,7 @@
 - **ID**: ticket-002
 - **Owner**: unresolved:human
 - **Status**: IN_PROGRESS
-- **Workflow state**: VALIDATION
+- **Workflow state**: PUBLICATION
 - **Created**: 2026-08-12
 
 ## Goal and scope
@@ -22,7 +22,7 @@ files without changing container assembly again.
 - [x] AC-02: `Dockerfile` no longer names absent implementation directories.
 - [x] AC-03: `COPY --exclude` filters exclude Git state, local environments,
   caches, credentials and build products from the image layer.
-- [ ] AC-04: A build made from committed bootstrap content succeeds with the
+- [x] AC-04: A build made from committed bootstrap content succeeds with the
   pinned Python digest, and governance validation passes.
 
 ## Authorization
