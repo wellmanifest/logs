@@ -26,5 +26,85 @@
   ],
   "dependsOn": [],
   "conflictsWith": [],
-  "integrationTicket": null
+  "integrationTicket": null,
+  "delivery": {
+    "acceptedBaseSha": "8428138f3e511e73b489c0551c838a63614c09b7",
+    "targetBranch": "main",
+    "outcome": "A deterministic POA/CQRS/Event Sourcing control plane that validates Protobuf-backed log DSL streams and requires one actionable errors/{CODE}.md definition per stable code",
+    "nonGoals": [
+      "Do not implement a general-purpose logging backend, collector or message broker",
+      "Do not accept arbitrary payloads, raw output, credentials, shell commands or transport configuration",
+      "Do not let an LLM-authored request append events, create authority or waive findings",
+      "Do not rewrite or delete published event history automatically",
+      "Do not publish a tag or release in this ticket"
+    ],
+    "complexity": "S",
+    "estimatedMinutes": 30,
+    "standardAdoption": {
+      "sourceRepository": "wellmanifest/new-project",
+      "fromRevision": null,
+      "toRevision": "63a03d0c2ec417f8eab9a6edb3c4ed654937a1ac"
+    },
+    "budgets": {
+      "maxImplementationFiles": 5,
+      "maxAffectedComponents": 2,
+      "maxPublicInterfaceChanges": 0,
+      "maxRuntimeDependencies": 0
+    },
+    "architecture": {
+      "status": "accepted",
+      "decision": "Use Protobuf as the canonical type system, one closed contract bundle for JSON projections and propose-only GBNF, canonical hash-chained JSONL for event sourcing, structured error Markdown with embedded DSL, and a dependency-free deterministic validator as the decision boundary",
+      "components": [
+        {
+          "name": "typed-contracts",
+          "paths": [
+            "proto/wellmanifest/logs/v1/logs.proto",
+            "contracts/logs.contract.json"
+          ]
+        },
+        {
+          "name": "conformance-and-projections",
+          "paths": [
+            "standard/logs_check.py",
+            "logs/control.jsonl",
+            "errors/LOGS-VALIDATION-001.md"
+          ]
+        }
+      ],
+      "responsibilityChanges": false,
+      "interfaceChanges": [],
+      "dataChanges": [
+        "Introduce wellmanifest.logs/v1 command, query, event, error, finding, projection and receipt messages",
+        "Introduce canonical JSONL event streams with sequence and SHA-256 predecessor chaining",
+        "Introduce embedded wellmanifest.logs/error/v1 definitions at errors/{CODE}.md"
+      ],
+      "ui": {
+        "impact": "none",
+        "states": [],
+        "evidence": []
+      },
+      "rollback": "Revert the five implementation files before merge; after integration preserve history and issue a compensating contract version rather than rewriting published event streams"
+    },
+    "runtimeDependencies": [],
+    "validation": [
+      {
+        "criterion": "AC-06",
+        "commands": [
+          "python3 standard/logs_check.py self-test",
+          "python3 standard/logs_check.py validate --root ."
+        ],
+        "evidence": "project/ticket-001/ai-codex-logs.txt"
+      },
+      {
+        "criterion": "AC-08",
+        "commands": [
+          "docker compose run --rm conformance",
+          "docker compose run --rm tests",
+          "docker compose run --rm proto",
+          "./project/governance-check.sh --actor agent"
+        ],
+        "evidence": "project/ticket-001/ai-codex-logs.txt"
+      }
+    ]
+  }
 }

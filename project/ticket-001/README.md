@@ -27,7 +27,7 @@ The architecture follows POA, CQRS and Event Sourcing:
 
 ## Acceptance criteria
 
-- [ ] AC-01: A single autonomous seed baseline contains only governance,
+- [x] AC-01: A single autonomous seed baseline contains only governance,
   required root files and pinned Docker configuration; its real SHA is recorded
   as `delivery.acceptedBaseSha` before implementation.
 - [ ] AC-02: The Protobuf v3 contract defines separate command, query, event,

@@ -8,3 +8,4 @@
   Sourcing/Protobuf design before implementation.
 - Pinned the Python and Buf container images and kept the autonomous seed
   baseline free of product contracts and executable implementation.
+- Bound the real seed commit `8428138` as the accepted implementation base.
