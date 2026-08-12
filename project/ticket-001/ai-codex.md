@@ -54,6 +54,22 @@ instructions live in error runbooks, not event payloads.
 - Created exactly one local governance seed commit
   `8428138a19a8997544e504b7b4211db039633fed` with zero implementation paths,
   then bound that real SHA as the accepted delivery base before editing code.
+- Released the integration reservation while ticket 002 repaired the
+  independent Docker bootstrap defect, then resumed at `IN_PROGRESS / EDIT`
+  after that repair merged into the accepted branch history.
+- Verified that `main`, `origin/main` and the ticket branch all resolve to
+  `88e6fe9f4f1d70ad4b7a3a705f6b1887693fc269`; the intervening diff is limited
+  to the Docker repair and its governance evidence, so the delivery base was
+  refreshed without changing ticket 001 scope or architecture.
+- Added the canonical Protobuf service model, closed JSON/GBNF compatibility
+  unit, one valid hash-chained control stream and its complete stable-code
+  runbook.
+- Implemented a dependency-free read-only validator with canonical encoding,
+  evidence, chain, catalog, Protobuf and propose-only request checks plus 11
+  adversarial self-tests.
+- Documented the POA/CQRS/Event Sourcing flow, trust boundary, Protobuf
+  projection map, failure semantics and safe extension rules in the
+  discoverable validation runbook.
 
 ## Risks
 

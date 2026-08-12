@@ -2,8 +2,8 @@
 
 - **ID**: ticket-001
 - **Owner**: unresolved:human
-- **Status**: BACKLOG
-- **Workflow state**: PLAN
+- **Status**: IN_PROGRESS
+- **Workflow state**: PUBLICATION
 - **Created**: 2026-08-12
 
 ## Goal and scope
@@ -28,25 +28,26 @@ The architecture follows POA, CQRS and Event Sourcing:
 ## Acceptance criteria
 
 - [x] AC-01: A single autonomous seed baseline contains only governance,
-  required root files and pinned Docker configuration; its real SHA is recorded
-  as `delivery.acceptedBaseSha` before implementation.
-- [ ] AC-02: The Protobuf v3 contract defines separate command, query, event,
+  required root files and pinned Docker configuration; its real SHA was
+  recorded before implementation, then the delivery base was refreshed only
+  after the non-overlapping Docker repair merged.
+- [x] AC-02: The Protobuf v3 contract defines separate command, query, event,
   error-definition, finding, projection and receipt messages without generic
   shell, credential or transport fields.
-- [ ] AC-03: Closed JSON Schema and GBNF contracts accept only bounded planning
+- [x] AC-03: Closed JSON Schema and GBNF contracts accept only bounded planning
   requests; model-authored input cannot append, authorize, select a path or
   invent an execution URI.
-- [ ] AC-04: `logs/*.jsonl` validation enforces canonical encoding, exact
+- [x] AC-04: `logs/*.jsonl` validation enforces canonical encoding, exact
   fields, monotonic sequence, stream identity, predecessor/event hashes,
   bounded evidence and explicit `rawOutputIncluded=false` and
   `secretMaterialIncluded=false`.
-- [ ] AC-05: Every emitted `LOGS-*` code has exactly one
+- [x] AC-05: Every emitted `LOGS-*` code has exactly one
   `errors/{CODE}.md`; title, filename, required sections and embedded error DSL
   agree, and every event code resolves to that catalog.
-- [ ] AC-06: The standard-library Python checker returns stable findings and
+- [x] AC-06: The standard-library Python checker returns stable findings and
   adversarial tests reject unknown fields, unsafe flags, broken chains,
   undocumented codes, malformed runbooks and authority-bearing LLM requests.
-- [ ] AC-07: Architecture and logic-flow documents include POA/CQRS/ES diagrams,
+- [x] AC-07: Architecture and logic-flow documents include POA/CQRS/ES diagrams,
   authority boundaries, Protobuf mapping, failure semantics and safe extension
   rules.
 - [ ] AC-08: Host conformance, pinned networkless Docker validation, Buf lint,
@@ -63,10 +64,10 @@ tag/release publication or treating the session as trusted merge approval.
 The unborn-repository exception authorizes exactly one local governance-only
 seed commit. It does not authorize a remote, push, PR, merge, tag or release.
 
-The implementation reservation is temporarily released while the independent
-Docker bootstrap defect is corrected under a non-overlapping infrastructure
-ticket. Resume this ticket at `IN_PROGRESS / EDIT` before changing its five
-implementation paths.
+The independent Docker bootstrap defect was corrected and merged under the
+non-overlapping infrastructure ticket. The implementation reservation resumed
+at `IN_PROGRESS / EDIT` on the exact accepted base before validation and any
+further changes to its five implementation paths.
 
 ## Participants
 
