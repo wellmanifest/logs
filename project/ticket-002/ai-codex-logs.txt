@@ -1,0 +1,6 @@
+2026-08-12 PRE_IMPLEMENTATION_GATE base=65fa047a8323e57a76f6be3bd25163091d9e6112 result=PASS errors=0 warnings=0
+2026-08-12 DOCKER_BUILD context=working_tree image=wellmanifest-logs-bootstrap-check pinned_base=true result=PASS
+2026-08-12 IMAGE_EXCLUSION_CHECK paths=.git,.env,.venv,standard/__pycache__ result=PASS
+2026-08-12 BASE_CORRECTION prior=65fa047a8323e57a76f6be3bd25163091d9e6112 current=19f1a5f32274c7f0e04a9ad508229f10fc55a77c reason=target_main_was_advanced_by_governance_only_ticket_plan verification=diff_contains_only_governance_paths implementation_at_current_base=false
+2026-08-12 CLEAN_COMMITTED_BUILD head=d9c1ae0 temporary_worktree=true image=wellmanifest-logs-clean-bootstrap-check result=PASS cleanup=PASS remaining_worktrees=1
+2026-08-12 GOVERNANCE_GATE base=19f1a5f32274c7f0e04a9ad508229f10fc55a77c head=d9c1ae0 result=PASS errors=0 warnings=0

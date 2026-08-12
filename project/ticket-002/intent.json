@@ -20,7 +20,7 @@
   "conflictsWith": [],
   "integrationTicket": null,
   "delivery": {
-    "acceptedBaseSha": "65fa047a8323e57a76f6be3bd25163091d9e6112",
+    "acceptedBaseSha": "19f1a5f32274c7f0e04a9ad508229f10fc55a77c",
     "targetBranch": "main",
     "outcome": "A pinned Docker image build no longer depends on implementation directories being present in the bootstrap tree",
     "nonGoals": [

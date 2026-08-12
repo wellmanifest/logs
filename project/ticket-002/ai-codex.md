@@ -27,6 +27,10 @@ The infrastructure fix must not take ownership of contracts, runtime or logs.
 
 - Initialized the bounded ticket and recorded SESSION_EXECUTION_AUTHORIZATION
   from the request to execute this work.
+- Replaced six eager directory copies, including the nonexistent `grammar/`,
+  with one repository copy boundary.
+- Added layer exclusions for Git state, `.env`, virtual environments, Python
+  bytecode/cache directories and build products.
 
 ## Risks
 
