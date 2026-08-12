@@ -52,7 +52,7 @@ instructions live in error runbooks, not event payloads.
 - Recorded `SESSION_EXECUTION_AUTHORIZATION` and the narrower autonomous seed
   authorization before implementation.
 - Created exactly one local governance seed commit
-  `8428138f3e511e73b489c0551c838a63614c09b7` with zero implementation paths,
+  `8428138a19a8997544e504b7b4211db039633fed` with zero implementation paths,
   then bound that real SHA as the accepted delivery base before editing code.
 
 ## Risks
