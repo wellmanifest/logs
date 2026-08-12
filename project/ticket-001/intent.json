@@ -40,11 +40,6 @@
     ],
     "complexity": "S",
     "estimatedMinutes": 30,
-    "standardAdoption": {
-      "sourceRepository": "wellmanifest/new-project",
-      "fromRevision": null,
-      "toRevision": "63a03d0c2ec417f8eab9a6edb3c4ed654937a1ac"
-    },
     "budgets": {
       "maxImplementationFiles": 5,
       "maxAffectedComponents": 2,

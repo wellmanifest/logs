@@ -6,3 +6,4 @@
 2026-08-12 PRE_SEED_GATE result=EXPECTED_UNBORN GOV-DIFF-001(no HEAD); GOV-WORKSTREAM-003 exposed target manifest path typo and was corrected before seed; JSON/adoption/compose/diff checks PASS
 2026-08-12 SEED commit=8428138f3e511e73b489c0551c838a63614c09b7 parents=0 implementation_paths=0 remote=ABSENT result=PASS
 2026-08-12 CORRECTION prior_seed_full_sha=INVALID(manually expanded short SHA) authoritative_seed=8428138a19a8997544e504b7b4211db039633fed verified_by=git_rev-parse,git_show implementation_started=false
+2026-08-12 PRE_IMPLEMENTATION_GATE result=GOV-SYNC-001 cause=standardAdoption incorrectly declared as post-base delta although adoption is already contained in accepted seed action=remove_delta_claim implementation_started=false
