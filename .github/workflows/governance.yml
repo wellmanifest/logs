@@ -1,0 +1,31 @@
+name: governance
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  pull_request_review:
+    types: [submitted, dismissed]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pull-requests: read
+
+jobs:
+  governance:
+    if: >-
+      (github.event_name == 'push' &&
+      github.ref_name == github.event.repository.default_branch) ||
+      github.event_name == 'workflow_dispatch' ||
+      (github.event_name == 'pull_request_review' &&
+      (github.event.action == 'submitted' ||
+      (github.event.action == 'dismissed' &&
+      github.event.review.commit_id == github.event.pull_request.head.sha)))
+    permissions:
+      contents: read
+      pull-requests: read
+    uses: wellmanifest/new-project/.github/workflows/governance.yml@63a03d0c2ec417f8eab9a6edb3c4ed654937a1ac
+    with:
+      standard-ref: 63a03d0c2ec417f8eab9a6edb3c4ed654937a1ac
+      trusted-validator-apps: 'ifuri-validator-agent[bot]'
