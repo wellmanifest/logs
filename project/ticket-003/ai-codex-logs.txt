@@ -1,0 +1,10 @@
+2026-08-12 AUTHORIZATION user=yes scope=governance_caller,main_ruleset,revalidate_pr2,merge,closure direct_main=false bypass=false secrets=false
+2026-08-12 ALLOCATION allocator=project/new-ticket.sh ticket=ticket-003 workstream=infrastructure classification=BUG/P1/regression human_file=ABSENT base=5263951882dc3f31055483bbb498ad8ea06b74e6
+2026-08-12 BOOTSTRAP_CONTEXT pr1_merge=88e6fe9f4f1d70ad4b7a3a705f6b1887693fc269 ticket2_closure_pr=3 ticket2_closure_merge=5263951882dc3f31055483bbb498ad8ea06b74e6 existing_rulesets=0 main_protected=false existing_workflow=remote_lifecycle_only
+2026-08-12 PRE_IMPLEMENTATION_GATE result=PASS errors=0 warnings=0 base=5263951882dc3f31055483bbb498ad8ea06b74e6
+2026-08-12 CALLER workflow=.github/workflows/governance.yml reusable_ref=63a03d0c2ec417f8eab9a6edb3c4ed654937a1ac standard_ref=63a03d0c2ec417f8eab9a6edb3c4ed654937a1ac trusted_validator_apps=ifuri-validator-agent[bot] permissions=contents:read,pull-requests:read
+2026-08-12 IMPLEMENTATION_GATES actionlint=v1.7.7:PASS governance=PASS errors=0 warnings=0 diff_check=PASS implementation_files=1
+2026-08-12 VALIDATION_ENTRY state=IN_PROGRESS/VALIDATION ac02=PASS ac03=PASS ac04=WAITING_RULESET ac05=WAITING_RULESET ac06=WAITING_PROTECTED_CLOSURE
+2026-08-12 FINAL_LOCAL_GATES actionlint=v1.7.7:PASS governance=PASS errors=0 warnings=0 diff_check=PASS
+2026-08-12 PUBLICATION_ENTRY state=IN_PROGRESS/PUBLICATION bootstrap_merge=true ruleset_activation=after_caller_integration
+2026-08-12 PROTECTED_GATE_FAILURE run=31633394939 job=94237569662 code=GOV-INTENT-003 cause=ticket_and_workflow_shared_first_commit remediation=split_plan_and_implementation_history stale_review_expected=true

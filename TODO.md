@@ -2,7 +2,11 @@
 
 ## Active work
 
-No active tickets.
+- [ ] [`ticket-003`](project/ticket-003/README.md) — add the pinned trusted
+  governance caller and a no-bypass default-branch ruleset, then prove
+  exact-head App approval through a protected closure PR. State:
+  `IN_PROGRESS / PUBLICATION`; classification: `BUG / P1 / regression`; workstream:
+  `infrastructure`.
 
 ## Planned work
 
