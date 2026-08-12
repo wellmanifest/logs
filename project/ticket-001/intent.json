@@ -95,7 +95,7 @@
         "commands": [
           "docker compose run --rm conformance",
           "docker compose run --rm tests",
-          "docker compose run --rm proto",
+          "docker compose run --rm -v /root/.cache proto",
           "./project/governance-check.sh --actor agent"
         ],
         "evidence": "project/ticket-001/ai-codex-logs.txt"

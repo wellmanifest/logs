@@ -2,8 +2,8 @@
 
 - **ID**: ticket-001
 - **Owner**: unresolved:human
-- **Status**: IN_PROGRESS
-- **Workflow state**: EDIT
+- **Status**: BACKLOG
+- **Workflow state**: PLAN
 - **Created**: 2026-08-12
 
 ## Goal and scope
@@ -62,6 +62,11 @@ tag/release publication or treating the session as trusted merge approval.
 
 The unborn-repository exception authorizes exactly one local governance-only
 seed commit. It does not authorize a remote, push, PR, merge, tag or release.
+
+The implementation reservation is temporarily released while the independent
+Docker bootstrap defect is corrected under a non-overlapping infrastructure
+ticket. Resume this ticket at `IN_PROGRESS / EDIT` before changing its five
+implementation paths.
 
 ## Participants
 
