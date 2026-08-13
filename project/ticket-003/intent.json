@@ -1,0 +1,100 @@
+{
+  "schema": "new-project.intent/v3",
+  "ticket": "ticket-003",
+  "summary": "Protect main with trusted governance approval",
+  "workstream": "infrastructure",
+  "classification": {
+    "kind": "BUG",
+    "priority": "P1",
+    "origin": "regression"
+  },
+  "allowedPaths": [
+    ".github/workflows/governance.yml",
+    "project/ticket-003/**",
+    "TODO.md",
+    "project/TICKETS.md"
+  ],
+  "forbiddenPaths": ["project/ticket-*/user-*.md"],
+  "stacks": [],
+  "dependsOn": ["ticket-002"],
+  "conflictsWith": [],
+  "integrationTicket": null,
+  "delivery": {
+    "acceptedBaseSha": "5263951882dc3f31055483bbb498ad8ea06b74e6",
+    "targetBranch": "main",
+    "outcome": "Every pull request to main is fail-closed on exact-head trusted governance evidence and remote branch lifecycle checks",
+    "nonGoals": [
+      "Do not change product contracts, runtime, Docker configuration or log history",
+      "Do not add a human reviewer allowlist, bypass actor or repository secret",
+      "Do not publish a tag or release",
+      "Do not treat advisory LLM output as merge authority"
+    ],
+    "complexity": "S",
+    "estimatedMinutes": 20,
+    "budgets": {
+      "maxImplementationFiles": 1,
+      "maxAffectedComponents": 1,
+      "maxPublicInterfaceChanges": 0,
+      "maxRuntimeDependencies": 0
+    },
+    "architecture": {
+      "status": "accepted",
+      "decision": "Use one target-owned caller pinned to the adopted published governance revision and a repository ruleset with zero bypass actors; the reusable workflow resolves exact-head App review into ephemeral approval-evidence/v1",
+      "components": [
+        {
+          "name": "protected-governance-boundary",
+          "paths": [".github/workflows/governance.yml"]
+        }
+      ],
+      "responsibilityChanges": false,
+      "interfaceChanges": [],
+      "dataChanges": [],
+      "ui": {"impact": "none", "states": [], "evidence": []},
+      "rollback": "Before relying on the boundary, remove the ruleset and revert the caller through an independently reviewed infrastructure PR; never bypass a live failing gate"
+    },
+    "runtimeDependencies": [],
+    "validation": [
+      {
+        "criterion": "AC-02",
+        "commands": [
+          "actionlint .github/workflows/governance.yml",
+          "./project/governance-check.sh --actor agent"
+        ],
+        "evidence": "project/ticket-003/ai-codex-logs.txt"
+      },
+      {
+        "criterion": "AC-03",
+        "commands": [
+          "actionlint .github/workflows/governance.yml",
+          "./project/governance-check.sh --actor agent"
+        ],
+        "evidence": "project/ticket-003/ai-codex-logs.txt"
+      },
+      {
+        "criterion": "AC-04",
+        "commands": [
+          "gh api repos/wellmanifest/logs/rulesets/{id}",
+          "gh pr checks {number}",
+          "gh api repos/wellmanifest/logs/pulls/{number}/reviews"
+        ],
+        "evidence": "project/ticket-003/ai-codex-logs.txt"
+      },
+      {
+        "criterion": "AC-05",
+        "commands": [
+          "gh api repos/wellmanifest/logs",
+          "gh api repos/wellmanifest/logs/rulesets/{id}"
+        ],
+        "evidence": "project/ticket-003/ai-codex-logs.txt"
+      },
+      {
+        "criterion": "AC-06",
+        "commands": [
+          "gh pr checks {number}",
+          "gh api repos/wellmanifest/logs/pulls/{number}/reviews"
+        ],
+        "evidence": "project/ticket-003/ai-codex-logs.txt"
+      }
+    ]
+  }
+}
