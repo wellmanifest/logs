@@ -8,3 +8,7 @@
 2026-08-12 FINAL_LOCAL_GATES actionlint=v1.7.7:PASS governance=PASS errors=0 warnings=0 diff_check=PASS
 2026-08-12 PUBLICATION_ENTRY state=IN_PROGRESS/PUBLICATION bootstrap_merge=true ruleset_activation=after_caller_integration
 2026-08-12 PROTECTED_GATE_FAILURE run=31633394939 job=94237569662 code=GOV-INTENT-003 cause=ticket_and_workflow_shared_first_commit remediation=split_plan_and_implementation_history stale_review_expected=true
+2026-08-13 BOOTSTRAP_PUBLICATION pr=4 reviewed_head=b4f645d3b91a55a2114aa5957feec7cc6a93e062 validator=ifuri-validator-agent[bot] review=APPROVED merge=099bc40b7c962523a5b7266734573362dd769329 remote_branch=DELETED
+2026-08-13 RULESET id=20795590 target=default_branch enforcement=active bypass_actors=0 current_user_can_bypass=never pull_request=true approvals=1 dismiss_stale=true last_push_approval=true threads_resolved=true merge_methods=merge required_contexts="governance / governance / enforce,governance / remote lifecycle"
+2026-08-13 LIFECYCLE delete_branch_on_merge=true remaining_remote_ticket_branch=ticket/001-logs-dsl-control owner_pr=2 state=OPEN
+2026-08-13 CLOSURE state=DONE/DONE source=099bc40b7c962523a5b7266734573362dd769329 governance_only=true protected_merge_required=true
