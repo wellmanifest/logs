@@ -70,6 +70,11 @@ instructions live in error runbooks, not event payloads.
   only on that same roadmap projection.
 - Re-ran host validation, all 11 adversarial checks, networkless Docker
   validation/tests and Buf lint with its isolated cache volume; all pass.
+- After the authorized ticket-003 bootstrap merged as
+  `099bc40b7c962523a5b7266734573362dd769329`, refreshed the accepted base again
+  and retained both non-overlapping active workstreams in the TODO projection.
+- Verified ruleset `20795590` is active with no bypass actors and requires both
+  exact governance contexts before ticket-001 can merge.
 - Added the canonical Protobuf service model, closed JSON/GBNF compatibility
   unit, one valid hash-chained control stream and its complete stable-code
   runbook.

@@ -22,3 +22,6 @@
 2026-08-13 CONFLICT_CLASSIFICATION files=TODO.md resolution=ticket_001_active_ticket_002_done ticket_001_implementation_conflicts=0 ticket_003_overlap=TODO.md_only
 2026-08-13 REVALIDATION host_compile=PASS host_validate=PASS host_self_test=PASS adversarial_checks=11 docker_engine=29.1.3 docker_conformance=PASS docker_tests=PASS
 2026-08-13 BUF_LINT first_attempt=READ_ONLY_CACHE_EXPECTED_FAILURE corrected_command="docker compose run --rm -v /root/.cache proto" result=PASS image=bufbuild/buf:1.57.2@sha256:60dea959d4a9ea381a2c9d6f8760678845234e086f632ec01a64bb588143a226
+2026-08-13 TRUST_BOOTSTRAP pr=4 reviewed_head=b4f645d3b91a55a2114aa5957feec7cc6a93e062 validator=ifuri-validator-agent[bot] review=APPROVED merge=099bc40b7c962523a5b7266734573362dd769329 remote_branch=DELETED
+2026-08-13 RULESET id=20795590 enforcement=active bypass_actors=0 current_user_can_bypass=never required_contexts="governance / governance / enforce,governance / remote lifecycle"
+2026-08-13 MAIN_REFRESH prior_base=5263951882dc3f31055483bbb498ad8ea06b74e6 current_base=099bc40b7c962523a5b7266734573362dd769329 reason=authorized_ticket_003_trust_bootstrap implementation_scope_changed=false architecture_changed=false
