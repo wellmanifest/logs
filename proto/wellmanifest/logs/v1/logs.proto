@@ -1,0 +1,182 @@
+syntax = "proto3";
+
+package wellmanifest.logs.v1;
+
+import "google/protobuf/timestamp.proto";
+
+option java_multiple_files = true;
+option java_package = "org.wellmanifest.logs.v1";
+
+// Canonical cross-language severity. JSONL stores the suffix as uppercase text.
+enum Severity {
+  SEVERITY_UNSPECIFIED = 0;
+  SEVERITY_DEBUG = 1;
+  SEVERITY_INFO = 2;
+  SEVERITY_WARNING = 3;
+  SEVERITY_ERROR = 4;
+  SEVERITY_CRITICAL = 5;
+}
+
+enum EventType {
+  EVENT_TYPE_UNSPECIFIED = 0;
+  EVENT_TYPE_CONTRACT_REGISTERED = 1;
+  EVENT_TYPE_VALIDATION_STARTED = 2;
+  EVENT_TYPE_VALIDATION_PASSED = 3;
+  EVENT_TYPE_VALIDATION_FAILED = 4;
+  EVENT_TYPE_ERROR_RAISED = 5;
+  EVENT_TYPE_REMEDIATION_STARTED = 6;
+  EVENT_TYPE_REMEDIATION_COMPLETED = 7;
+}
+
+enum Outcome {
+  OUTCOME_UNSPECIFIED = 0;
+  OUTCOME_OBSERVED = 1;
+  OUTCOME_ACCEPTED = 2;
+  OUTCOME_REJECTED = 3;
+  OUTCOME_SUCCEEDED = 4;
+  OUTCOME_FAILED = 5;
+}
+
+message EvidenceRef {
+  string path = 1;
+  string sha256 = 2;
+}
+
+// Immutable event projection. No arbitrary payload or raw message exists in v1.
+message LogEvent {
+  string schema = 1;
+  string event_id = 2;
+  string stream = 3;
+  uint64 sequence = 4;
+  EventType event_type = 5;
+  Severity severity = 6;
+  google.protobuf.Timestamp occurred_at = 7;
+  string correlation_id = 8;
+  optional string causation_id = 9;
+  string producer = 10;
+  optional string code = 11;
+  string subject_ref = 12;
+  Outcome outcome = 13;
+  repeated EvidenceRef evidence = 14;
+  string previous_hash = 15;
+  string event_hash = 16;
+  bool raw_output_included = 17;
+  bool secret_material_included = 18;
+}
+
+message ErrorDefinition {
+  string schema = 1;
+  string code = 2;
+  uint32 version = 3;
+  Severity severity = 4;
+  string category = 5;
+  string title = 6;
+  string meaning = 7;
+  repeated string causes = 8;
+  repeated string remediation = 9;
+  repeated string verification = 10;
+  repeated string do_not = 11;
+  string owner = 12;
+  repeated EventType related_event_types = 13;
+}
+
+// Propose-only request family exposed at the LLM authoring boundary.
+message InspectRequest {
+  string schema = 1;
+  string operation = 2;
+  string process_ref = 3;
+}
+
+message PlanAppendRequest {
+  string schema = 1;
+  string operation = 2;
+  string process_ref = 3;
+  string stream = 4;
+  uint64 expected_version = 5;
+  string event_ref = 6;
+  string event_sha256 = 7;
+}
+
+message PlanAppendResponse {
+  string schema = 1;
+  string plan_id = 2;
+  string process_ref = 3;
+  string stream = 4;
+  uint64 expected_version = 5;
+  string previous_hash = 6;
+  string event_ref = 7;
+  string event_sha256 = 8;
+  string contract_sha256 = 9;
+  string plan_sha256 = 10;
+}
+
+// Created only by a trusted controller after external authority reconciliation.
+message ExecuteAppendRequest {
+  string schema = 1;
+  PlanAppendResponse plan = 2;
+  string subject_ref = 3;
+  string grant_ref = 4;
+  string intent_ref = 5;
+  string idempotency_key = 6;
+  LogEvent event = 7;
+}
+
+message ValidateRepositoryRequest {
+  string repository = 1;
+  string revision = 2;
+}
+
+message ReadStreamRequest {
+  string stream = 1;
+}
+
+message Finding {
+  string code = 1;
+  string rule = 2;
+  Severity severity = 3;
+  string path = 4;
+  string message = 5;
+  string help_path = 6;
+}
+
+message ValidateRepositoryResponse {
+  bool valid = 1;
+  string contract_sha256 = 2;
+  repeated Finding findings = 3;
+  uint64 streams_checked = 4;
+  uint64 events_checked = 5;
+  uint64 error_definitions_checked = 6;
+}
+
+message ReadStreamResponse {
+  string stream = 1;
+  uint64 version = 2;
+  string last_hash = 3;
+  map<string, uint64> event_type_counts = 4;
+  map<string, uint64> error_code_counts = 5;
+}
+
+message ExecuteAppendResponse {
+  bool accepted = 1;
+  string receipt_id = 2;
+  string stream = 3;
+  uint64 version = 4;
+  string event_hash = 5;
+  string plan_sha256 = 6;
+  repeated Finding findings = 7;
+}
+
+message InspectResponse {
+  string protobuf_schema = 1;
+  string json_projection_schema = 2;
+  repeated string process_refs = 3;
+  repeated string diagnostic_codes = 4;
+}
+
+service LogsControlService {
+  rpc Inspect(InspectRequest) returns (InspectResponse);
+  rpc PlanAppend(PlanAppendRequest) returns (PlanAppendResponse);
+  rpc ExecuteAppend(ExecuteAppendRequest) returns (ExecuteAppendResponse);
+  rpc ValidateRepository(ValidateRepositoryRequest) returns (ValidateRepositoryResponse);
+  rpc ReadStream(ReadStreamRequest) returns (ReadStreamResponse);
+}

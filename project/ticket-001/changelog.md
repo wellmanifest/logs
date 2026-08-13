@@ -9,3 +9,11 @@
 - Pinned the Python and Buf container images and kept the autonomous seed
   baseline free of product contracts and executable implementation.
 - Bound the real seed commit `8428138` as the accepted implementation base.
+- Refreshed the delivery base to `88e6fe9` after the non-overlapping Docker
+  bootstrap repair merged; ticket scope and architecture are unchanged.
+- Added the canonical Protobuf model, closed JSON/GBNF projections, canonical
+  hash-chained event stream and structured validation runbook.
+- Added deterministic repository/request validation and 11 adversarial checks,
+  including undocumented codes, malformed headings and non-normalized time.
+- Added POA/CQRS/Event Sourcing diagrams, Protobuf projection mapping, failure
+  semantics and safe extension rules to the discoverable runbook.

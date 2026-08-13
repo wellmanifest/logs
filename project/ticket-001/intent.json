@@ -28,7 +28,7 @@
   "conflictsWith": [],
   "integrationTicket": null,
   "delivery": {
-    "acceptedBaseSha": "8428138a19a8997544e504b7b4211db039633fed",
+    "acceptedBaseSha": "3e58ec3a4678dd72497bc441f477b245852ac0d5",
     "targetBranch": "main",
     "outcome": "A deterministic POA/CQRS/Event Sourcing control plane that validates Protobuf-backed log DSL streams and requires one actionable errors/{CODE}.md definition per stable code",
     "nonGoals": [
