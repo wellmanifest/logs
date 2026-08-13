@@ -8,12 +8,6 @@
   Sourcing documentation. State: `IN_PROGRESS / PUBLICATION`; classification:
   `FEATURE / P1 / requested`; workstream: `integration`.
 
-- [ ] [`ticket-002`](project/ticket-002/README.md) — make the pinned Docker
-  bootstrap independent of not-yet-created implementation directories and
-  explicitly exclude local state from its image layer. State:
-  `IN_PROGRESS / PUBLICATION`; classification: `BUG / P1 / regression`; workstream:
-  `infrastructure`.
-
 ## Planned work
 
 No planned tickets.

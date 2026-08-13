@@ -2,8 +2,8 @@
 
 - **ID**: ticket-002
 - **Owner**: unresolved:human
-- **Status**: IN_PROGRESS
-- **Workflow state**: PUBLICATION
+- **Status**: DONE
+- **Workflow state**: DONE
 - **Created**: 2026-08-12
 
 ## Goal and scope
@@ -36,3 +36,11 @@ tag/release publication, direct implementation push to `main` or self-review.
 
 - Human participant: unresolved; no user-* file was created by this script.
 - Agent participant: [ai-codex.md](ai-codex.md)
+
+## Closure evidence
+
+PR #1 merged reviewed head `a23cd688f9d622809705a94cae629f2a8b82fcaa`
+into `main` as `88e6fe9f4f1d70ad4b7a3a705f6b1887693fc269`.
+The exact-head Validator App review was recorded before merge, the remote ticket
+branch was deleted, and the integrated Docker bootstrap was rebuilt
+successfully before this governance-only closure.

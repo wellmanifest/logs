@@ -31,6 +31,11 @@ The infrastructure fix must not take ownership of contracts, runtime or logs.
   with one repository copy boundary.
 - Added layer exclusions for Git state, `.env`, virtual environments, Python
   bytecode/cache directories and build products.
+- Published PR #1, obtained the exact-head Validator App approval for
+  `a23cd688f9d622809705a94cae629f2a8b82fcaa`, and integrated it into `main` as
+  merge commit `88e6fe9f4f1d70ad4b7a3a705f6b1887693fc269`.
+- Confirmed GitHub deleted the merged remote ticket branch before recording
+  this governance-only `DONE / DONE` closure from integrated `main`.
 
 ## Risks
 
@@ -42,6 +47,4 @@ The infrastructure fix must not take ownership of contracts, runtime or logs.
 
 ## Blockers
 
-- None inside the recorded intent; proceed without a second confirmation.
-- New authority remains required for destructive action, secret access, new
-  external coordination, material objective expansion and trusted merge.
+- None. The implementation is integrated and the ticket is closed.

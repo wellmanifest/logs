@@ -61,6 +61,15 @@ instructions live in error runbooks, not event payloads.
   `88e6fe9f4f1d70ad4b7a3a705f6b1887693fc269`; the intervening diff is limited
   to the Docker repair and its governance evidence, so the delivery base was
   refreshed without changing ticket 001 scope or architecture.
+- After the governance-only ticket-002 closure advanced `main` to
+  `5263951882dc3f31055483bbb498ad8ea06b74e6`, merged that authoritative base,
+  retained ticket 001 as the sole active integration item, and refreshed the
+  accepted base without changing its implementation scope or architecture.
+- Verified that the only conflict was the project-level TODO projection; all
+  ticket-001 implementation files were conflict-free and ticket-003 overlaps
+  only on that same roadmap projection.
+- Re-ran host validation, all 11 adversarial checks, networkless Docker
+  validation/tests and Buf lint with its isolated cache volume; all pass.
 - Added the canonical Protobuf service model, closed JSON/GBNF compatibility
   unit, one valid hash-chained control stream and its complete stable-code
   runbook.
