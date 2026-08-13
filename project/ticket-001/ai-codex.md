@@ -75,6 +75,10 @@ instructions live in error runbooks, not event payloads.
   and retained both non-overlapping active workstreams in the TODO projection.
 - Verified ruleset `20795590` is active with no bypass actors and requires both
   exact governance contexts before ticket-001 can merge.
+- After the first protected closure passed exact-head App review and merged as
+  `3e58ec3a4678dd72497bc441f477b245852ac0d5`, refreshed ticket-001 from that
+  canonical `main` and removed the obsolete no-active-ticket sentinel while
+  retaining ticket-001 as the sole active workstream.
 - Added the canonical Protobuf service model, closed JSON/GBNF compatibility
   unit, one valid hash-chained control stream and its complete stable-code
   runbook.
