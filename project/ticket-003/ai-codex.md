@@ -38,6 +38,14 @@ that trust boundary without making the reviewed repository its own approver.
 - Configured review-event execution with read-only permissions and the single
   exact Validator App login `ifuri-validator-agent[bot]`; no human allowlist,
   secret, bypass actor or moving ref was introduced.
+- Published bootstrap PR #4, obtained exact-head Validator App approval for
+  `b4f645d3b91a55a2114aa5957feec7cc6a93e062`, and integrated it as merge
+  commit `099bc40b7c962523a5b7266734573362dd769329`.
+- Activated ruleset `20795590` with no bypass actors, strict current-head
+  review requirements and both governance contexts, while retaining automatic
+  merged-branch deletion.
+- Created this governance-only `DONE / DONE` closure from the integrated
+  protected default branch as the end-to-end enforcement proof.
 
 ## Risks
 
@@ -53,6 +61,5 @@ that trust boundary without making the reviewed repository its own approver.
 
 ## Blockers
 
-- None inside the recorded intent; proceed without a second confirmation.
-- New authority remains required for destructive action, secret access, new
-  external coordination, material objective expansion and trusted merge.
+- None. The bootstrap is integrated; this closure remains subject to the
+  protected exact-head review and required status checks before merge.

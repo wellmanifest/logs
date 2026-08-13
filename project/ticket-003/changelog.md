@@ -8,3 +8,5 @@
   standard revision, closed App allowlist and no-bypass ruleset contract.
 - Added the read-only target caller for ephemeral exact-head governance
   approval evidence and validated it with actionlint and the repository gate.
+- Integrated the exact-head reviewed bootstrap, activated the no-bypass
+  default-branch ruleset and recorded the governance-only protected closure.
