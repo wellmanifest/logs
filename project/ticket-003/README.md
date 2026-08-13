@@ -2,8 +2,8 @@
 
 - **ID**: ticket-003
 - **Owner**: unresolved:human
-- **Status**: IN_PROGRESS
-- **Workflow state**: PUBLICATION
+- **Status**: DONE
+- **Workflow state**: DONE
 - **Created**: 2026-08-12
 
 ## Goal and scope
@@ -24,13 +24,13 @@ validation.
 - [x] AC-03: Approval resolution accepts only exact login
   `ifuri-validator-agent[bot]`, current HEAD and the ticket owning the diff;
   evidence is created in protected runner temporary storage outside checkout.
-- [ ] AC-04: An active ruleset protects the default branch with no bypass,
+- [x] AC-04: An active ruleset protects the default branch with no bypass,
   blocks deletion/non-fast-forward changes, requires a pull request, one
   independent current-head approval, resolved review threads and both
   governance status contexts.
-- [ ] AC-05: `delete_branch_on_merge=true` remains enabled and remote lifecycle
+- [x] AC-05: `delete_branch_on_merge=true` remains enabled and remote lifecycle
   validation passes with every non-default branch owned by an open PR.
-- [ ] AC-06: The bootstrap PR receives exact-head Validator App review; after
+- [x] AC-06: The bootstrap PR receives exact-head Validator App review; after
   integration, a governance-only closure PR proves the new resolver and ruleset
   before the ticket becomes `DONE / DONE`.
 
@@ -51,3 +51,13 @@ subsequent PRs must pass the new protected resolver.
 
 - Human participant: unresolved; no user-* file was created by this script.
 - Agent participant: [ai-codex.md](ai-codex.md)
+
+## Closure evidence
+
+Bootstrap PR #4 received exact-head Validator App approval for
+`b4f645d3b91a55a2114aa5957feec7cc6a93e062` and merged into `main` as
+`099bc40b7c962523a5b7266734573362dd769329`; GitHub then deleted its remote
+ticket branch. Ruleset `20795590` is active for the default branch with no
+bypass actors and requires an independent current-head approval plus both
+governance contexts. This governance-only closure, created from that integrated
+`main`, becomes canonical only after those protections accept and merge it.
