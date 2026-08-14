@@ -24,3 +24,11 @@
 
 - Reissued ticket-004 as a successor with a plan-only first commit after the
   protected gate rejected predecessor PR #7 for missing prior intent history.
+
+## [0.1.2] - 2026-08-14
+
+- Recorded exact-head hosted checks, Validator App reviews and protected merge
+  `4440e9e9a40423715747a57b86e3d9405be5aa4e` for successor PR #8.
+- Closed predecessor PR #7 without merge and preserved its branch as required
+  for unmerged work.
+- Closed ticket-004 only from the integrated default branch.

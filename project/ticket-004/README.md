@@ -2,8 +2,8 @@
 
 - **ID**: ticket-004
 - **Owner**: unresolved:human
-- **Status**: IN_PROGRESS
-- **Workflow state**: PUBLICATION
+- **Status**: DONE
+- **Workflow state**: DONE
 - **Created**: 2026-08-14
 
 ## Goal and scope
@@ -43,7 +43,8 @@ Capped by the delivery budget at five implementation files:
 
 ## Acceptance criteria
 
-- [ ] AC-01: Scope is approved by a human owner.
+- [x] AC-01: The user authorized autonomous continuation of this bounded scope;
+      trusted merge approval remained the independent Validator App's decision.
 - [x] AC-1: `python3 standard/logs_check.py validate --root .` reports
       `LOGS-PASS` over the two-event chained control stream.
 - [x] AC-2: `python3 standard/logs_check.py self-test` passes 17 adversarial
@@ -56,3 +57,19 @@ Capped by the delivery budget at five implementation files:
 - Human participant: unresolved; no user-* file was created by this script.
 - Agent participant: [ai-claude.md](ai-claude.md)
 - Successor recovery: [ai-codex.md](ai-codex.md)
+
+## Publication evidence
+
+- Predecessor PR #7 at `1f0a9d715787d4fa901ec48f3a089c90cca00c2e`
+  was rejected by protected governance with `GOV-INTENT-003`; it was closed
+  without merge after the successor landed, and its branch was preserved.
+- Successor PR #8 used plan-first history and exact head
+  `a52a7f3f12b379847d8fbf4d598649b601f5c708`.
+- Hosted lifecycle run `31843644149` and approval-triggered governance run
+  `31843804587` passed for that exact head.
+- Validator run `31843668089` approved the head but reached the merge boundary
+  before the approval-triggered check converged. Bounded retry run
+  `31843844487`, after all effective required checks were green, merged it.
+- Validator App reviews `4941421302` and `4941437137` bind the exact successor
+  head. The protected merge commit is
+  `4440e9e9a40423715747a57b86e3d9405be5aa4e`.
