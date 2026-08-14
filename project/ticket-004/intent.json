@@ -1,0 +1,100 @@
+{
+  "schema": "new-project.intent/v3",
+  "ticket": "ticket-004",
+  "summary": "Revise the logs contract from the c2004 deployment evidence",
+  "workstream": "integration",
+  "classification": {
+    "kind": "FEATURE",
+    "priority": "P1",
+    "origin": "requested"
+  },
+  "allowedPaths": [
+    "project/ticket-004/**",
+    "TODO.md",
+    "project/TICKETS.md",
+    "contracts/**",
+    "proto/**",
+    "standard/**",
+    "errors/**",
+    "logs/**"
+  ],
+  "forbiddenPaths": [
+    "project/ticket-*/user-*.md"
+  ],
+  "stacks": [],
+  "dependsOn": [],
+  "conflictsWith": [],
+  "integrationTicket": null,
+  "delivery": {
+    "acceptedBaseSha": "afa1f97a8261269bc00f87f7ddc3a2720d70fb9a",
+    "targetBranch": "main",
+    "outcome": "Revise the v0.1 event contract into v0.2 against the 315-event c2004 deployment: an open namespaced eventType, source split from producer, subjectState split from outcome, a PLAN/APPLY mode, inputHash as self-evidence, and null instead of sentinel placeholders.",
+    "nonGoals": [
+      "No change to the POA process registry, request grammar or propose-only boundary",
+      "No projection field map; the SODL/PLOG drift stays recorded as an open risk",
+      "No rotation or retention model; empty segments are already rejected by LOGS-STORE-EMPTY",
+      "No migration tooling for streams that were written without a hash chain",
+      "No docs/ or VERSION update; the budget caps this ticket at five implementation files, so they move to a dependent ticket"
+    ],
+    "complexity": "S",
+    "estimatedMinutes": 30,
+    "budgets": {
+      "maxImplementationFiles": 5,
+      "maxAffectedComponents": 2,
+      "maxPublicInterfaceChanges": 0,
+      "maxRuntimeDependencies": 0
+    },
+    "architecture": {
+      "status": "accepted",
+      "decision": "Keep Protobuf canonical and keep the core vocabulary closed, but give a deployment its own namespace beside it. c2004 emitted three ticket.* types that no closed enum could hold, so eventType becomes a union of the reserved core enum and a namespaced pattern that may not squat 'logs.'. Absent optional values are null because c2004 wrote '-' on all 315 events, which made an unexecuted event indistinguishable from an executed one.",
+      "components": [
+        {
+          "name": "contract",
+          "paths": [
+            "contracts/**",
+            "proto/**"
+          ]
+        },
+        {
+          "name": "conformance",
+          "paths": [
+            "standard/**",
+            "logs/**",
+            "errors/**"
+          ]
+        }
+      ],
+      "responsibilityChanges": false,
+      "interfaceChanges": [],
+      "dataChanges": [
+        "LogEvent gains source, mode, subjectState, inputHash and receiptRef",
+        "LogEvent.event_type becomes a string union; the EventType enum stays the reserved registry",
+        "evidence minItems relaxed from 1 to 0 because inputHash carries the binding",
+        "logs/control.jsonl re-projected into the v0.2 shape and extended to two chained events"
+      ],
+      "ui": {
+        "impact": "none",
+        "states": [],
+        "evidence": []
+      },
+      "rollback": "Revert the branch. The contract version constant, the JSONL projection and the checker move together, so no stream written under v0.2 can be read by a v0.1 checker and no partial state survives a revert."
+    },
+    "runtimeDependencies": [],
+    "validation": [
+      {
+        "criterion": "AC-1",
+        "commands": [
+          "python3 standard/logs_check.py validate --root ."
+        ],
+        "evidence": "LOGS-PASS over the two-event chained control stream"
+      },
+      {
+        "criterion": "AC-2",
+        "commands": [
+          "python3 standard/logs_check.py self-test"
+        ],
+        "evidence": "17 adversarial checks, including a positive case for a namespaced deployment type and a rejection of the '-' receipt placeholder"
+      }
+    ]
+  }
+}

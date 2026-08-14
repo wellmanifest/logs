@@ -28,6 +28,14 @@ enum EventType {
   EVENT_TYPE_REMEDIATION_COMPLETED = 7;
 }
 
+// A plan is proposed, an apply is executed. Both must be representable, or a
+// stream can only ever record work that already happened.
+enum Mode {
+  MODE_UNSPECIFIED = 0;
+  MODE_PLAN = 1;
+  MODE_APPLY = 2;
+}
+
 enum Outcome {
   OUTCOME_UNSPECIFIED = 0;
   OUTCOME_OBSERVED = 1;
@@ -48,7 +56,9 @@ message LogEvent {
   string event_id = 2;
   string stream = 3;
   uint64 sequence = 4;
-  EventType event_type = 5;
+  // Either a reserved EventType name or a namespaced deployment type such as
+  // "ticket.status_change". The EventType enum stays the reserved registry.
+  string event_type = 5;
   Severity severity = 6;
   google.protobuf.Timestamp occurred_at = 7;
   string correlation_id = 8;
@@ -62,6 +72,16 @@ message LogEvent {
   string event_hash = 16;
   bool raw_output_included = 17;
   bool secret_material_included = 18;
+  // The emitting subsystem, independent of who acted.
+  string source = 19;
+  Mode mode = 20;
+  // The subject's own lifecycle state, never the outcome of this operation.
+  optional string subject_state = 21;
+  // Binds the canonical command input so an event with no file artefact is
+  // still verifiable.
+  string input_hash = 22;
+  // Absent until a POA execution produced a receipt. Never a placeholder.
+  optional string receipt_ref = 23;
 }
 
 message ErrorDefinition {
