@@ -2,8 +2,8 @@
 
 - **ID**: ticket-005
 - **Owner**: unresolved:human
-- **Status**: IN_PROGRESS
-- **Workflow state**: PUBLICATION
+- **Status**: BLOCKED
+- **Workflow state**: BLOCKED
 - **Created**: 2026-08-15
 
 ## Goal and scope
@@ -44,6 +44,14 @@ differently (`oql`/`type`, `data.payload`/`logic`) and `PLOG/1` drops
       adversarial checks.
 - [x] AC-3: `VERSION` and the contract bundle version agree.
 - [x] AC-4: `./project/governance-check.sh` reports `GOV-PASS`.
+
+## Publication blocker
+
+Protected run `31848594548` rejected this branch with `GOV-INTENT-003`: the
+ticket and intent were introduced in the same first commit as implementation.
+That history cannot be repaired by appending another commit. The content must
+move losslessly to a newly allocated successor whose plan-only commit precedes
+its implementation; this ticket no longer reserves the integration workstream.
 
 ## Participants
 

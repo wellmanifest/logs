@@ -39,6 +39,8 @@ as accepted.
 
 ## Blockers
 
-- None inside the recorded intent; proceed without a second confirmation.
+- Protected publication run `31848594548` found `GOV-INTENT-003`: this ticket's
+  intent did not predate its implementation commit. Append-only repair is
+  impossible; a plan-first successor must carry the content losslessly.
 - New authority remains required for destructive action, secret access, new
   external coordination, material objective expansion and trusted merge.
