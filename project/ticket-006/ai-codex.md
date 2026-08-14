@@ -38,6 +38,8 @@ is verified and merged.
   predecessor; only two redundant terminal blank lines were omitted.
 - Regenerated the ticket index and passed logs validation, all 17 adversarial
   self-tests, governance and whitespace checks.
+- Advanced the verified exact head to `PUBLICATION`; only the independent
+  Validator App may approve and merge it.
 
 ## Blockers
 

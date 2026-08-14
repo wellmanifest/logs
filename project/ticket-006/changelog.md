@@ -16,3 +16,4 @@
   ticket-004's implementation-file budget.
 - Proved normalized content equivalence with the three intended files from
   rejected PR #10 and passed logs validation, 17 self-tests and governance.
+- Advanced the verified successor to `PUBLICATION` for independent validation.
