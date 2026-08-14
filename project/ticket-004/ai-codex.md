@@ -24,6 +24,9 @@ be republished as a successor without rewriting the predecessor branch.
 ## Actual changes
 
 - Recorded this successor plan before importing any implementation bytes.
+- Imported the predecessor's exact five implementation artifacts only after
+  the plan checkpoint and verified their Git object hashes match.
+- Passed logs validation, 17-case self-test, governance and diff checks.
 
 ## Blockers
 

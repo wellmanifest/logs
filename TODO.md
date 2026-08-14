@@ -14,7 +14,7 @@
   contract to v0.2 against the 315-event `maskservice/c2004` deployment: an open
   namespaced `eventType`, `source` split from `producer`, `subjectState` split
   from `outcome`, a `PLAN`/`APPLY` mode, `inputHash` as self-evidence, and
-  `null` instead of `"-"` placeholders. State: `IN_PROGRESS / EDIT`;
+  `null` instead of `"-"` placeholders. State: `IN_PROGRESS / PUBLICATION`;
   classification: `FEATURE / P1 / requested`; workstream: `integration`.
 
 ## Planned work
