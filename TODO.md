@@ -25,7 +25,7 @@
 
 - [ ] [`ticket-005`](project/ticket-005/README.md) — publish the v0.2
   documentation and the `VERSION` bump that `GOV-BUDGET-001` cut from
-  `ticket-004`. State: `IN_PROGRESS / EDIT`; classification:
+  `ticket-004`. State: `IN_PROGRESS / PUBLICATION`; classification:
   `SERVICE / P2 / health`; workstream: `integration`.
 - [ ] Record the v0.2.0 entry in `CHANGELOG.md` and refresh the `README.md`
   status line. Both are owned by the `governance` workstream, so they cannot
