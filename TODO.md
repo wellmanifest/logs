@@ -21,15 +21,16 @@
   `4440e9e9a40423715747a57b86e3d9405be5aa4e`; predecessor PR #7 was closed
   without merge and its branch remains preserved.
 
+- [x] [`ticket-006`](project/ticket-006/README.md) — publish the v0.2
+  documentation and `VERSION` through a plan-first successor. State:
+  `DONE / DONE`; classification: `SERVICE / P2 / health`; workstream:
+  `integration`. Validator App approved exact head
+  `f8ec0d898b722652ae903d33005bfb1aefedca24` and merged PR #11 as
+  `3e1bf6e43800a6191700e1a06f5d52a3f31d44bd`; the successor branch was deleted
+  and PR #10 received a digest-bound lossless disposition before cleanup.
+
 ## Planned work
 
-- [ ] [`ticket-006`](project/ticket-006/README.md) — publish the v0.2
-  documentation through a plan-first successor to rejected PR #10:
-  `docs/ARCHITECTURE.md`,
-  `docs/LOGIC_FLOW.md` and `VERSION`. Written under `ticket-004` but reverted
-  out of its diff after `GOV-BUDGET-001` capped the ticket at five
-  implementation files. State: `IN_PROGRESS / PUBLICATION`; classification:
-  `SERVICE / P2 / health`; workstream: `integration`.
 - [ ] Record the v0.2.0 entry in `CHANGELOG.md` and refresh the `README.md`
   status line. Both are owned by the `governance` workstream, so they cannot
   ride on an `integration` ticket.

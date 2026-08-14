@@ -1,0 +1,80 @@
+{
+  "schema": "wellmanifest.autonomy/superseded-work-content/v1",
+  "repository": "wellmanifest/logs",
+  "predecessor": {
+    "pullRequest": 10,
+    "headSha": "4c235afecdf2c6f4da41fce98293e71228ae93b3",
+    "implementationHeadSha": "58f0e0e1f678dc809e4608105d85cf38c7c44f55",
+    "treeSha": "4edd090f0070241e6715a4bbb4ab3822ef7d1689",
+    "archiveRef": "refs/pull/10/head"
+  },
+  "successor": {
+    "pullRequest": 11,
+    "headSha": "f8ec0d898b722652ae903d33005bfb1aefedca24",
+    "mergeSha": "3e1bf6e43800a6191700e1a06f5d52a3f31d44bd"
+  },
+  "normalization": "remove at most one terminal blank line before SHA-256",
+  "content": [
+    {
+      "path": "VERSION",
+      "predecessorBlobSha": "0ea3a944b399d25f7e1b8fe684d754eb8da9fe7f",
+      "successorBlobSha": "0ea3a944b399d25f7e1b8fe684d754eb8da9fe7f",
+      "normalizedSha256": "1f930dd1f133c1f97a94fe3acb8db34372cf4c01ffdb2b3ff4ca72f9494121e9",
+      "disposition": "integrated-exact"
+    },
+    {
+      "path": "docs/ARCHITECTURE.md",
+      "predecessorBlobSha": "47a66ec3e3887888305ec3023a39e04484b7e196",
+      "successorBlobSha": "279d5894a9314c6c9fa72bfa090aeeb8410938fc",
+      "normalizedSha256": "759149f332273371683215a4b24cc81437a490d4b97f7ae3d44bc0a747c28504",
+      "disposition": "integrated-normalized-terminal-blank-line"
+    },
+    {
+      "path": "docs/LOGIC_FLOW.md",
+      "predecessorBlobSha": "54e523a7a80996879bf771510d09b66b935e97f7",
+      "successorBlobSha": "e9e1aead00a4d75c7ae4ee9d0d220ccacf8abe69",
+      "normalizedSha256": "98fc237120e7eade3b559521e1c7f30d20899e52495b7f5fa642f57067bd3850",
+      "disposition": "integrated-normalized-terminal-blank-line"
+    },
+    {
+      "path": "TODO.md",
+      "predecessorBlobSha": "3cf1a65ac6017890d608043f378a65b66449b9de",
+      "disposition": "superseded-lifecycle-metadata-archived-in-pull-request"
+    },
+    {
+      "path": "project/TICKETS.md",
+      "predecessorBlobSha": "ee69f36896ec8b1f0c806df066d2eb93b76587f3",
+      "disposition": "superseded-lifecycle-metadata-archived-in-pull-request"
+    },
+    {
+      "path": "project/ticket-005/README.md",
+      "predecessorBlobSha": "fb783d3d70f87e5f53f8630026184a3ab3942968",
+      "disposition": "audit-artifact-archived-in-pull-request"
+    },
+    {
+      "path": "project/ticket-005/ai-claude-logs.txt",
+      "predecessorBlobSha": "0925eac916512f840be88b51072ecc1747fafc80",
+      "disposition": "audit-artifact-archived-in-pull-request"
+    },
+    {
+      "path": "project/ticket-005/ai-claude.md",
+      "predecessorBlobSha": "599e4d75aa19a4fb6f7a00fd647625de08e304cf",
+      "disposition": "audit-artifact-archived-in-pull-request"
+    },
+    {
+      "path": "project/ticket-005/changelog.md",
+      "predecessorBlobSha": "1e6224d169063f1477d778afba41d4af31ae21ed",
+      "disposition": "audit-artifact-archived-in-pull-request"
+    },
+    {
+      "path": "project/ticket-005/intent.json",
+      "predecessorBlobSha": "eb1fac928616767b26e5c1342370541900ac6f38",
+      "disposition": "audit-artifact-archived-in-pull-request"
+    },
+    {
+      "path": "project/ticket-005/preprompt.md",
+      "predecessorBlobSha": "ddf837ea3103016169c4c1debe1f082ed8b649c7",
+      "disposition": "audit-artifact-archived-in-pull-request"
+    }
+  ]
+}

@@ -2,8 +2,8 @@
 
 - **ID**: ticket-006
 - **Owner**: agent:codex
-- **Status**: IN_PROGRESS
-- **Workflow state**: PUBLICATION
+- **Status**: DONE
+- **Workflow state**: DONE
 - **Created**: 2026-08-14
 
 ## Goal and scope
@@ -36,9 +36,31 @@ unmerged content of ticket-005/PR #10.
 - [x] AC-05: `python3 standard/logs_check.py self-test` passes all 17 checks.
 - [x] AC-06: `VERSION` equals the contract bundle version `0.2.0`.
 - [x] AC-07: `./project/governance-check.sh` reports `GOV-PASS`.
+- [x] AC-08: Validator run `31849335166` bound exact successor head
+      `f8ec0d898b722652ae903d33005bfb1aefedca24`, approval `4941823861` and two
+      stable post-approval reads before merging PR #11 as
+      `3e1bf6e43800a6191700e1a06f5d52a3f31d44bd`.
+- [x] AC-09: Every PR #10 path has an integrated, archived or explicitly
+      superseded disposition in [predecessor-content-manifest.json](predecessor-content-manifest.json),
+      bound by [supersession-receipt.json](supersession-receipt.json). The
+      branch may be deleted only after this receipt reaches protected `main`.
 
 ## Participants
 
 - Human participant: the session owner authorized autonomous continuation; no
   `user-*` file was created or modified.
 - Agent participant: [ai-codex.md](ai-codex.md)
+
+## Publication and supersession evidence
+
+- Hosted pre-review lifecycle run `31849255682` passed on exact head
+  `f8ec0d898b722652ae903d33005bfb1aefedca24`.
+- Validator run `31849335166` submitted App review `4941823861`; approval then
+  triggered required governance run `31849434851`.
+- Both effective required checks reached terminal success, and Validator read
+  the protected state twice before explicitly merging PR #11 as
+  `3e1bf6e43800a6191700e1a06f5d52a3f31d44bd`.
+- GitHub deleted the successor source branch after merge.
+- Rejected predecessor PR #10 remains open at
+  `4c235afecdf2c6f4da41fce98293e71228ae93b3`. Its complete file inventory and
+  dispositions are archived here before any delete-before-close operation.

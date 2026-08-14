@@ -34,3 +34,20 @@
       98fc237120e7eade3b559521e1c7f30d20899e52495b7f5fa642f57067bd3850
     Predecessor and successor digests match for all three files. Normalization
     removes only one optional terminal blank line.
+
+[6] Protected publication
+    Hosted pre-review lifecycle: 31849255682 success.
+    Validator: 31849335166 success.
+    App review: 4941823861 APPROVED on f8ec0d898b722652ae903d33005bfb1aefedca24.
+    Approval-triggered governance: 31849434851 success.
+    Post-approval convergence: 2 stable protected reads.
+    Merge: 3e1bf6e43800a6191700e1a06f5d52a3f31d44bd.
+    Successor branch read-back: absent.
+
+[7] Superseded-work proof
+    Predecessor PR: wellmanifest/logs#10, still open.
+    Predecessor exact head: 4c235afecdf2c6f4da41fce98293e71228ae93b3.
+    GitHub archive ref: refs/pull/10/head -> exact predecessor head.
+    Content manifest SHA-256:
+      738a66ea9ce5d636d4b0502211fb4b2ce0ea2b0d2f619ffc0ce214bad3caa089
+    No predecessor branch deletion or PR closure occurred in this cycle.
