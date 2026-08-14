@@ -1,0 +1,84 @@
+{
+  "schema": "new-project.intent/v3",
+  "ticket": "ticket-005",
+  "summary": "Publish the v0.2 documentation and version bump",
+  "workstream": "integration",
+  "classification": {
+    "kind": "SERVICE",
+    "priority": "P2",
+    "origin": "health"
+  },
+  "allowedPaths": [
+    "project/ticket-005/**",
+    "TODO.md",
+    "project/TICKETS.md",
+    "VERSION",
+    "docs/**"
+  ],
+  "forbiddenPaths": [
+    "project/ticket-*/user-*.md"
+  ],
+  "stacks": [],
+  "dependsOn": [
+    "ticket-004"
+  ],
+  "conflictsWith": [],
+  "integrationTicket": null,
+  "delivery": {
+    "acceptedBaseSha": "7d333663878c6203895de671bfe8812c4bfbd567",
+    "targetBranch": "main",
+    "outcome": "Land the v0.2 documentation that GOV-BUDGET-001 cut from ticket-004, and close the resulting drift between contract version 0.2.0 and VERSION 0.1.0.",
+    "nonGoals": [
+      "No contract, Protobuf, checker or stream change; those landed with ticket-004",
+      "No projection field map; the SODL/PLOG drift stays recorded as an open risk",
+      "No migration tooling for streams written without a hash chain"
+    ],
+    "complexity": "XS",
+    "estimatedMinutes": 10,
+    "budgets": {
+      "maxImplementationFiles": 5,
+      "maxAffectedComponents": 1,
+      "maxPublicInterfaceChanges": 0,
+      "maxRuntimeDependencies": 0
+    },
+    "architecture": {
+      "status": "accepted",
+      "decision": "Documentation only. ticket-004 raised the contract bundle to 0.2.0 but its five-file budget forced docs/ and VERSION out of the diff, leaving main describing a v0.1 design while shipping a v0.2 contract. This closes that gap with the evidence already gathered, so no new analysis is introduced.",
+      "components": [
+        {
+          "name": "documentation",
+          "paths": [
+            "docs/**",
+            "VERSION"
+          ]
+        }
+      ],
+      "responsibilityChanges": false,
+      "interfaceChanges": [],
+      "dataChanges": [],
+      "ui": {
+        "impact": "none",
+        "states": [],
+        "evidence": []
+      },
+      "rollback": "Revert the branch. Nothing executable depends on these files."
+    },
+    "runtimeDependencies": [],
+    "validation": [
+      {
+        "criterion": "AC-1",
+        "commands": [
+          "python3 standard/logs_check.py validate --root ."
+        ],
+        "evidence": "LOGS-PASS is unaffected by a documentation-only diff"
+      },
+      {
+        "criterion": "AC-2",
+        "commands": [
+          "python3 standard/logs_check.py self-test"
+        ],
+        "evidence": "17 adversarial checks still pass"
+      }
+    ]
+  }
+}

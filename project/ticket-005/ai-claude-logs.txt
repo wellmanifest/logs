@@ -1,0 +1,23 @@
+2026-08-15 ticket-005 (agent:claude)
+
+[1] Stan main przed zmiana:
+    contracts/logs.contract.json version = 0.2.0
+    VERSION                               = 0.1.0
+    docs/ARCHITECTURE.md: brak sekcji "Deployment evidence" (grep -c -> 0)
+    Rozjazd powstal, gdy GOV-BUDGET-001 wyciol docs/ i VERSION z ticket-004.
+
+[2] Zrodlo zmiany: przetrzymany commit f866801 na lokalnej galezi
+    logs-v02-docs-deferred. Zaaplikowany na biezacy main bez konfliktu.
+      VERSION              |  3 +--
+      docs/ARCHITECTURE.md | 52 +++++++++++++++++++++++++++++++++-----
+      docs/LOGIC_FLOW.md   | 28 ++++++++++++++++++++++
+
+[3] Weryfikacja po zmianie:
+    python3 standard/logs_check.py validate --root .
+      LOGS-PASS: 1 stream(s), 2 event(s), 1 error definition(s)
+    python3 standard/logs_check.py self-test
+      logs conformance self-test: PASS (17 adversarial checks)
+    VERSION i wersja kontraktu zgodne: 0.2.0
+
+[4] ./project/governance-check.sh
+      GOV-PASS: passed (0 errors, 0 warnings)

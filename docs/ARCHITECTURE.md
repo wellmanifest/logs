@@ -1,6 +1,8 @@
 # Logs control-plane architecture
 
-Status: accepted v0.1 design for `ticket-001`.
+Status: accepted v0.2 design. The v0.1 design came from `ticket-001`; `ticket-004`
+revised it against the first real deployment (see
+[Deployment evidence](#deployment-evidence-c2004)).
 
 ## Scope
 
@@ -68,13 +70,21 @@ object. A stream has:
 
 - a stable stream name and monotonic sequence starting at 1;
 - a unique event ID, correlation ID and optional causation ID;
-- a bounded event type, severity, producer, subject and outcome;
-- bounded evidence references with exact SHA-256 digests;
+- a bounded severity, producer, subject and outcome;
+- an event type that is either a reserved core name or a namespaced deployment
+  type such as `ticket.status_change`;
+- `source`, the emitting subsystem, kept separate from `producer`, who acted;
+- `mode`, either `PLAN` or `APPLY`, so a proposal is representable;
+- `subjectState`, the subject's own lifecycle state, never the operation outcome;
+- `inputHash`, binding the canonical command input;
+- optional evidence references with exact SHA-256 digests;
+- optional `receiptRef`, null until a POA execution produced a receipt;
 - `previousHash`, with 64 zeroes at genesis, and a recomputed `eventHash`;
 - explicit `rawOutputIncluded=false` and `secretMaterialIncluded=false`.
 
-There is no arbitrary payload or raw message field in v0.1. This deliberately
-trades convenience for predictable review and a smaller exfiltration surface.
+There is no arbitrary payload or raw message field. This deliberately trades
+convenience for predictable review and a smaller exfiltration surface;
+`inputHash` is what keeps such an event verifiable without storing the input.
 
 ## Error knowledge
 
@@ -86,6 +96,32 @@ verification, prohibited shortcuts and related event types.
 The checker validates the catalog bidirectionally: emitted codes cannot lack a
 page, and pages cannot invent codes not present in the contract bundle.
 
+## Deployment evidence (c2004)
+
+v0.1 was designed against a single bootstrap event. `maskservice/c2004` ran an
+independent event log — `subactor.operational-event.v1`, projected as `SODL/1`
+and `PLOG/1` — for three weeks. Its 315 events are the first real measurement of
+the assumptions in this document.
+
+| Observation in c2004 | Count | Consequence for this standard |
+| --- | --- | --- |
+| `oql` types were `ticket.create`, `ticket.update`, `ticket.status_change` | 3 distinct / 315 | A closed core enum cannot express a deployment's own domain. `eventType` became an open union: reserved core names plus a namespaced pattern, with the `logs.` namespace reserved. |
+| `actor` (`system`, `human`, `decompose`, `cursor`) varied independently of `source` (`planfile.history`, `planfile.ticket`) | 4 × 2 | Who acted and which subsystem emitted are separate facts. `source` was added alongside `producer` rather than collapsing both. |
+| `status` carried `done`, `open`, `blocked`, `in_progress`, `waiting_input`, `cancelled` | 6 distinct | That is subject lifecycle, not the outcome of the append. `subjectState` was added so `outcome` keeps its five bounded values. |
+| `input_hash` present on every event; no event referenced a file artefact | 315 / 0 | Requiring at least one evidence file made ordinary domain events unrepresentable. `evidence` may now be empty when `inputHash` binds the input. |
+| `receipt_ref` was the string `"-"` | 315 / 315 | A placeholder makes an unexecuted event indistinguishable from an executed one. `receiptRef` is null when absent, and `"-"` is rejected. |
+| `causation_id` was the string `"-"` | 315 / 315 | Same defect. The sentinel belongs to the line-oriented projection, never to the canonical JSON. |
+| `mode` was always `apply` | 315 / 315 | The plan half of the POA split was never observable. `mode` is a required `PLAN`/`APPLY` enum. |
+| `replayable` was always `true`; `kind` was always `task` | 315 / 315 | A dimension that never varies is not audit evidence. Both were considered and deliberately not adopted. |
+| `previous_hash` and `sequence` were absent | 0 / 315 | The deployment kept no hash chain, so ordering rested on file append order alone. The chain requirement stands; `logs/control.jsonl` now carries two chained events so the rule is exercised rather than assumed. |
+| Daily rotation left three 0-byte segments | 3 of 6 | Already rejected by `LOGS-STORE-EMPTY`. No change needed; the existing rule is validated. |
+| `SODL/1` and `PLOG/1` named the same field differently (`oql`/`type`, `data.payload`/`logic`) and `PLOG/1` dropped `input_hash` | — | Unmapped projection drift. Not fixed in v0.2; recorded as the open risk for the next revision. |
+
+Two conclusions carry beyond the field list. First, the reserved-vocabulary
+approach only works when a deployment has somewhere else to put its own names.
+Second, an optional field whose absence is written as a sentinel string is worse
+than no field, because validation cannot distinguish absence from a value.
+
 ## Invariants
 
 1. Protobuf field numbers and enum values are stable within v1.
@@ -95,4 +131,10 @@ page, and pages cannot invent codes not present in the contract bundle.
 5. Raw output, secrets, unknown fields and unbounded payloads are rejected.
 6. Error documentation never waives a finding.
 7. LLM output is propose-only and never a command, grant or approval.
+8. A deployment event type is namespaced and never squats the reserved `logs.`
+   namespace.
+9. An absent optional value is `null`. A sentinel string is rejected, because
+   validation must be able to tell absence from a value.
+10. Every event binds its command input with `inputHash`, so an event carrying
+    no file evidence is still verifiable.
 

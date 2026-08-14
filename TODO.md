@@ -23,11 +23,10 @@
 
 ## Planned work
 
-- [ ] Publish the v0.2 documentation: `docs/ARCHITECTURE.md`,
-  `docs/LOGIC_FLOW.md` and `VERSION`. Written under `ticket-004` but reverted
-  out of its diff after `GOV-BUDGET-001` capped the ticket at five
-  implementation files. Depends on `ticket-004` merging, because `integration`
-  allows one active ticket at a time.
+- [ ] [`ticket-005`](project/ticket-005/README.md) — publish the v0.2
+  documentation and the `VERSION` bump that `GOV-BUDGET-001` cut from
+  `ticket-004`. State: `IN_PROGRESS / EDIT`; classification:
+  `SERVICE / P2 / health`; workstream: `integration`.
 - [ ] Record the v0.2.0 entry in `CHANGELOG.md` and refresh the `README.md`
   status line. Both are owned by the `governance` workstream, so they cannot
   ride on an `integration` ticket.
