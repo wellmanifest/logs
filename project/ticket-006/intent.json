@@ -35,7 +35,7 @@
       "No history rewrite of ticket-005 or PR #10"
     ],
     "complexity": "XS",
-    "estimatedMinutes": 15,
+    "estimatedMinutes": 10,
     "budgets": {
       "maxImplementationFiles": 3,
       "maxAffectedComponents": 1,
