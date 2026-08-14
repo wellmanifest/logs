@@ -1,0 +1,86 @@
+2026-08-14 ticket-004 (agent:claude)
+
+[1] Baseline before any change, on main:
+    python3 standard/logs_check.py validate --root .
+      LOGS-PASS: 1 stream(s), 1 event(s), 1 error definition(s)
+    python3 standard/logs_check.py self-test
+      logs conformance self-test: PASS (11 adversarial checks)
+
+[2] Measurement of the c2004 deployment.
+    Source: repository maskservice/c2004, path .planfile/events/
+      operations.jsonl        315 events, schema subactor.operational-event.v1
+      logs.dsl.txt            current SODL/1 + PLOG/1 line projection
+      history/logs-*.dsl.txt  6 daily segments, 3 of them 0 bytes
+
+    Distribution over all 315 events:
+      schema        1 distinct   subactor.operational-event.v1  315
+      kind          1 distinct   task                           315
+      mode          1 distinct   apply                          315
+      replayable    1 distinct   True                           315
+      receipt_ref   1 distinct   "-"                            315
+      causation_id  1 distinct   "-"                            315
+      source        2 distinct   planfile.history 251 | planfile.ticket 64
+      oql           3 distinct   ticket.status_change 236 | ticket.create 64
+                                 | ticket.update 15
+      actor         4 distinct   system 251 | human 58 | decompose 4 | cursor 2
+      status        6 distinct   done 215 | open 72 | blocked 21
+                                 | in_progress 4 | waiting_input 2 | cancelled 1
+
+    URI shapes (ticket id normalised):
+      planfile://tickets/{id}/command/status_change   236
+      planfile://tickets/{id}/command/create           64
+      planfile://tickets/{id}/command/update           15
+
+    Field union present on the events:
+      actor causation_id correlation_id data event_hash event_id input_hash
+      kind mode oql receipt_ref replayable schema source status ticket_id
+      timestamp uri
+
+    Absent on every event: previous_hash, sequence.
+    data keys: ("payload",) on 315 of 315. evidence-style refs: 0.
+
+[3] Derived conclusions, in the order they changed the contract:
+    a) 3 of 3 event types are namespaced and none fits the closed 7-value enum
+       -> eventType must be an open union with a reserved core.
+    b) actor and source vary independently (4 x 2) -> two dimensions, not one.
+    c) status is subject lifecycle, not the outcome of the append -> a separate
+       subjectState field, outcome keeps its 5 bounded values.
+    d) input_hash 315/315 and file evidence 0/315 -> evidence minItems 1 was
+       unachievable for domain events; inputHash carries the binding instead.
+    e) receipt_ref and causation_id are "-" on 315/315 -> null, never a
+       sentinel; an unexecuted event must not look executed.
+    f) mode apply 315/315 -> the PLAN half of the POA split was unobservable;
+       mode becomes a required PLAN/APPLY enum.
+    g) replayable and kind never vary -> rejected, a constant is not evidence.
+    h) no chain at all -> the chain requirement stands and control.jsonl now
+       carries two chained events so the rule is exercised, not assumed.
+    i) 3 of 6 rotated segments are 0 bytes -> already rejected by
+       LOGS-STORE-EMPTY. No change; an existing rule is validated.
+
+[4] After the change:
+    python3 standard/logs_check.py validate --root .
+      LOGS-PASS: 1 stream(s), 2 event(s), 1 error definition(s)
+    python3 standard/logs_check.py self-test
+      logs conformance self-test: PASS (17 adversarial checks)
+
+    New adversarial cases: LOGS-EVENT-TYPE (logs. namespace squat),
+    LOGS-EVENT-MODE, LOGS-EVENT-SOURCE, LOGS-EVENT-INPUT, LOGS-EVENT-RECEIPT
+    (the exact "-" placeholder observed in c2004), LOGS-EVENT-STATE.
+    New positive case: eventType "ticket.status_change" must be accepted.
+
+[5] Gate history on this branch:
+    GOV-DELIVERY-001  -> no delivery contract in intent.json; added one.
+    GOV-INTENT-002    -> ui.evidence must be empty when ui.impact is none.
+    GOV-ARCHITECTURE-001 + GOV-BUDGET-001
+                      -> 8 implementation files against maxImplementationFiles 5.
+                         Remediation is explicit: split into a dependent ticket,
+                         do not enlarge the PR. docs/ARCHITECTURE.md,
+                         docs/LOGIC_FLOW.md and VERSION were reverted out of this
+                         diff and held for the follow-up.
+    ./project/governance-check.sh
+      GOV-PASS: passed (0 errors, 0 warnings)
+
+[6] rewrite_event in the self-test now mutates the last event of a stream
+    rather than the only one. With two chained events, mutating the first would
+    break the successor predecessor hash and every case would report
+    LOGS-EVENT-CHAIN instead of the rule under test.

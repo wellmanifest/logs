@@ -28,6 +28,12 @@ EVENT_ID_RE = re.compile(r"^event:[A-Za-z0-9._:-]{2,122}$")
 ACTOR_RE = re.compile(r"^(?:human|agent|service):[A-Za-z0-9._:-]+$")
 OWNER_RE = re.compile(r"^(?:human|agent|service|unresolved):[A-Za-z0-9._:-]+$")
 SUBJECT_RE = re.compile(r"^[a-z][a-z0-9+.-]*:[A-Za-z0-9._:/-]+$")
+# A reserved core type is a bare identifier; a deployment type is namespaced and
+# may never squat the reserved "logs." namespace.
+DOMAIN_TYPE_RE = re.compile(r"^(?!logs\.)[a-z][a-z0-9]*(?:\.[a-z][a-z0-9_]*)+$")
+SOURCE_RE = re.compile(r"^[a-z][a-z0-9]*(?:\.[a-z][a-z0-9_]*)*$")
+STATE_RE = re.compile(r"^[a-z][a-z0-9_]*$")
+RECEIPT_RE = re.compile(r"^receipt://[A-Za-z0-9._:/-]+$")
 PATH_RE = re.compile(r"^(?!/)(?!.*(?:^|/)\.\.(?:/|$))[A-Za-z0-9._/-]+$")
 SHA_RE = re.compile(r"^[a-f0-9]{64}$")
 DATETIME_RE = re.compile(
@@ -202,7 +208,7 @@ def load_contract(root: Path) -> tuple[dict[str, Any], str]:
     constants = {
         "$schema": "https://json-schema.org/draft/2020-12/schema",
         "schema": "wellmanifest.logs/contract-bundle/v1",
-        "version": "0.1.0",
+        "version": "0.2.0",
         "canonical": "protobuf",
         "protobufPath": "proto/wellmanifest/logs/v1/logs.proto",
         "projection": "canonical-jsonl",
@@ -234,7 +240,7 @@ def load_contract(root: Path) -> tuple[dict[str, Any], str]:
     )
     vocabulary = exact_fields(
         bundle.get("vocabulary"),
-        {"severities", "eventTypes", "outcomes", "errorCategories"},
+        {"severities", "eventTypes", "outcomes", "errorCategories", "modes"},
         rule="LOGS-CONTRACT-VOCABULARY",
         path=CONTRACT_PATH.as_posix(),
     )
@@ -253,11 +259,25 @@ def load_contract(root: Path) -> tuple[dict[str, Any], str]:
             CONTRACT_PATH.as_posix(),
             "event severity schema differs from vocabulary",
         )
-    if event_properties.get("eventType", {}).get("enum") != vocabulary["eventTypes"]:
+    # eventType is an open union: the reserved core enum plus a namespaced
+    # deployment pattern. Only the reserved half is vocabulary-controlled.
+    event_type_union = event_properties.get("eventType", {}).get("oneOf")
+    if (
+        not isinstance(event_type_union, list)
+        or len(event_type_union) != 2
+        or event_type_union[0].get("enum") != vocabulary["eventTypes"]
+        or event_type_union[1].get("pattern") != DOMAIN_TYPE_RE.pattern
+    ):
         raise ContractFailure(
             "LOGS-CONTRACT-VOCABULARY",
             CONTRACT_PATH.as_posix(),
             "event type schema differs from vocabulary",
+        )
+    if event_properties.get("mode", {}).get("enum") != vocabulary["modes"]:
+        raise ContractFailure(
+            "LOGS-CONTRACT-VOCABULARY",
+            CONTRACT_PATH.as_posix(),
+            "event mode schema differs from vocabulary",
         )
     if event_properties.get("outcome", {}).get("enum") != vocabulary["outcomes"]:
         raise ContractFailure(
@@ -299,6 +319,7 @@ def validate_proto(root: Path, bundle: dict[str, Any]) -> None:
         f"EVENT_TYPE_{value.upper()}" for value in vocabulary["eventTypes"]
     )
     required.extend(f"OUTCOME_{value}" for value in vocabulary["outcomes"])
+    required.extend(f"MODE_{value}" for value in vocabulary["modes"])
     forbidden = (
         "google.protobuf.Struct",
         "google.protobuf.Value",
@@ -545,12 +566,26 @@ def validate_event(
     ):
         raise ContractFailure("LOGS-EVENT-SEQUENCE", path, "event sequence is not contiguous")
     vocabulary = bundle["vocabulary"]
-    if value.get("eventType") not in vocabulary["eventTypes"]:
+    event_type = value.get("eventType")
+    if event_type not in vocabulary["eventTypes"] and (
+        not isinstance(event_type, str)
+        or not 3 <= len(event_type) <= 64
+        or DOMAIN_TYPE_RE.fullmatch(event_type) is None
+    ):
         raise ContractFailure("LOGS-EVENT-TYPE", path, "event type is invalid")
     if value.get("severity") not in vocabulary["severities"]:
         raise ContractFailure("LOGS-EVENT-SEVERITY", path, "event severity is invalid")
+    if value.get("mode") not in vocabulary["modes"]:
+        raise ContractFailure("LOGS-EVENT-MODE", path, "event mode is invalid")
     if value.get("outcome") not in vocabulary["outcomes"]:
         raise ContractFailure("LOGS-EVENT-OUTCOME", path, "event outcome is invalid")
+    subject_state = value.get("subjectState")
+    if subject_state is not None and (
+        not isinstance(subject_state, str)
+        or len(subject_state) > 32
+        or STATE_RE.fullmatch(subject_state) is None
+    ):
+        raise ContractFailure("LOGS-EVENT-STATE", path, "event subject state is invalid")
     require_datetime(value.get("occurredAt"), path)
     correlation = value.get("correlationId")
     causation = value.get("causationId")
@@ -561,6 +596,7 @@ def validate_event(
     ):
         raise ContractFailure("LOGS-EVENT-CAUSATION", path, "causation ID is invalid")
     producer = value.get("producer")
+    source = value.get("source")
     subject = value.get("subjectRef")
     if (
         not isinstance(producer, str)
@@ -568,6 +604,14 @@ def validate_event(
         or ACTOR_RE.fullmatch(producer) is None
     ):
         raise ContractFailure("LOGS-EVENT-PRODUCER", path, "event producer is invalid")
+    # Who acted and which subsystem emitted the record are separate dimensions;
+    # collapsing them loses the ability to attribute an event to either one.
+    if (
+        not isinstance(source, str)
+        or not 3 <= len(source) <= 64
+        or SOURCE_RE.fullmatch(source) is None
+    ):
+        raise ContractFailure("LOGS-EVENT-SOURCE", path, "event source is invalid")
     if (
         not isinstance(subject, str)
         or len(subject) > 160
@@ -579,8 +623,22 @@ def validate_event(
         raise ContractFailure("LOGS-EVENT-CODE", path, "event code has no error definition")
     if value.get("rawOutputIncluded") is not False or value.get("secretMaterialIncluded") is not False:
         raise ContractFailure("LOGS-EVENT-SAFETY", path, "event safety flags must both be false")
+    input_hash = value.get("inputHash")
+    if not isinstance(input_hash, str) or SHA_RE.fullmatch(input_hash) is None:
+        raise ContractFailure("LOGS-EVENT-INPUT", path, "event input hash is invalid")
+    receipt = value.get("receiptRef")
+    # An absent receipt is null. A placeholder string would make an unexecuted
+    # event indistinguishable from an executed one.
+    if receipt is not None and (
+        not isinstance(receipt, str)
+        or len(receipt) > 160
+        or RECEIPT_RE.fullmatch(receipt) is None
+    ):
+        raise ContractFailure("LOGS-EVENT-RECEIPT", path, "event receipt reference is invalid")
     evidence = value.get("evidence")
-    if not isinstance(evidence, list) or not 1 <= len(evidence) <= 16:
+    # File evidence is optional because inputHash already binds the command
+    # input; high-frequency domain events produce no artefact to reference.
+    if not isinstance(evidence, list) or len(evidence) > 16:
         raise ContractFailure("LOGS-EVENT-EVIDENCE", path, "event evidence list is invalid")
     seen_evidence: set[tuple[str, str]] = set()
     for item in evidence:
@@ -819,10 +877,20 @@ def copy_fixture(source: Path, destination: Path) -> None:
 
 
 def rewrite_event(path: Path, mutate: Any) -> None:
-    event = json.loads(path.read_text("utf-8"))
+    # Mutate the last event only. Rewriting an earlier one would break the
+    # successor's predecessor hash and mask the rule under test behind
+    # LOGS-EVENT-CHAIN.
+    events = [json.loads(line) for line in path.read_text("utf-8").splitlines() if line]
+    event = events[-1]
     mutate(event)
     event["eventHash"] = calculate_event_hash(event)
-    path.write_text(canonical(event) + "\n", encoding="utf-8")
+    path.write_text("".join(canonical(item) + "\n" for item in events), encoding="utf-8")
+
+
+def assert_valid(root: Path, label: str) -> None:
+    result = validate_repository(root)
+    if not result["valid"]:
+        raise AssertionError(f"{label} was rejected: {result['findings']}")
 
 
 def assert_invalid(root: Path, rule: str) -> None:
@@ -885,6 +953,61 @@ def run_self_test(source: Path) -> None:
         )
         assert_invalid(timestamp, "LOGS-EVENT-TIME")
 
+        # v0.2 rules derived from the c2004 deployment. The positive case is the
+        # point of the revision: a real deployment emits namespaced domain types
+        # that no closed enum could ever hold.
+        domain = Path(temporary) / "domain"
+        copy_fixture(source, domain)
+        rewrite_event(
+            domain / "logs/control.jsonl",
+            lambda event: event.update({"eventType": "ticket.status_change"}),
+        )
+        assert_valid(domain, "namespaced deployment event type")
+
+        squat = Path(temporary) / "squat"
+        copy_fixture(source, squat)
+        rewrite_event(
+            squat / "logs/control.jsonl",
+            lambda event: event.update({"eventType": "logs.forged"}),
+        )
+        assert_invalid(squat, "LOGS-EVENT-TYPE")
+
+        mode = Path(temporary) / "mode"
+        copy_fixture(source, mode)
+        rewrite_event(mode / "logs/control.jsonl", lambda event: event.update({"mode": "apply"}))
+        assert_invalid(mode, "LOGS-EVENT-MODE")
+
+        origin = Path(temporary) / "origin"
+        copy_fixture(source, origin)
+        rewrite_event(
+            origin / "logs/control.jsonl",
+            lambda event: event.update({"source": "Logs.Bootstrap"}),
+        )
+        assert_invalid(origin, "LOGS-EVENT-SOURCE")
+
+        unbound = Path(temporary) / "unbound"
+        copy_fixture(source, unbound)
+        rewrite_event(unbound / "logs/control.jsonl", lambda event: event.update({"inputHash": "-"}))
+        assert_invalid(unbound, "LOGS-EVENT-INPUT")
+
+        # The c2004 stream carried "-" on every receipt for 315 events, which
+        # made an unexecuted event indistinguishable from an executed one.
+        placeholder = Path(temporary) / "placeholder"
+        copy_fixture(source, placeholder)
+        rewrite_event(
+            placeholder / "logs/control.jsonl",
+            lambda event: event.update({"receiptRef": "-"}),
+        )
+        assert_invalid(placeholder, "LOGS-EVENT-RECEIPT")
+
+        state = Path(temporary) / "state"
+        copy_fixture(source, state)
+        rewrite_event(
+            state / "logs/control.jsonl",
+            lambda event: event.update({"subjectState": "SUCCEEDED "}),
+        )
+        assert_invalid(state, "LOGS-EVENT-STATE")
+
         docs = Path(temporary) / "docs"
         copy_fixture(source, docs)
         page = docs / HELP_PATH
@@ -938,7 +1061,7 @@ def run_self_test(source: Path) -> None:
                 pass
             else:
                 raise AssertionError("authority-bearing request was accepted")
-    print("logs conformance self-test: PASS (11 adversarial checks)")
+    print("logs conformance self-test: PASS (17 adversarial checks)")
 
 
 def print_report(result: dict[str, Any], output_format: str) -> None:
