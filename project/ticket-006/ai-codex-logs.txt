@@ -1,0 +1,11 @@
+2026-08-14 ticket-006 (agent:codex)
+
+[1] Protected evidence
+    Validator run 31848485364 approved PR #10 head 58f0e0e, then blocked merge.
+    Review-triggered governance run 31848594548 returned GOV-INTENT-003:
+    project/ticket-005/intent.json did not predate implementation.
+
+[2] Remediation
+    ticket-005 moved to BLOCKED so it no longer reserves integration.
+    Allocator created ticket-006 from integrated main under the clone-wide lock.
+    This first commit is intentionally plan-only.

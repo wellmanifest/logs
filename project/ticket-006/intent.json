@@ -1,0 +1,93 @@
+{
+  "schema": "new-project.intent/v3",
+  "ticket": "ticket-006",
+  "summary": "Publish the v0.2 documentation through a plan-first successor to rejected PR #10",
+  "workstream": "integration",
+  "classification": {
+    "kind": "SERVICE",
+    "priority": "P2",
+    "origin": "health"
+  },
+  "allowedPaths": [
+    "project/ticket-006/**",
+    "TODO.md",
+    "project/TICKETS.md",
+    "VERSION",
+    "docs/ARCHITECTURE.md",
+    "docs/LOGIC_FLOW.md"
+  ],
+  "forbiddenPaths": [
+    "project/ticket-*/user-*.md"
+  ],
+  "stacks": [],
+  "dependsOn": [
+    "ticket-004"
+  ],
+  "conflictsWith": [],
+  "integrationTicket": null,
+  "delivery": {
+    "acceptedBaseSha": "7d333663878c6203895de671bfe8812c4bfbd567",
+    "targetBranch": "main",
+    "outcome": "Deliver PR #10's v0.2 documentation and version alignment without inheriting its invalid intent history.",
+    "nonGoals": [
+      "No contract, Protobuf, checker, stream or runtime change",
+      "No projection field map",
+      "No history rewrite of ticket-005 or PR #10"
+    ],
+    "complexity": "XS",
+    "estimatedMinutes": 15,
+    "budgets": {
+      "maxImplementationFiles": 3,
+      "maxAffectedComponents": 1,
+      "maxPublicInterfaceChanges": 0,
+      "maxRuntimeDependencies": 0
+    },
+    "architecture": {
+      "status": "accepted",
+      "decision": "A new plan-first history is required because GOV-INTENT-003 is immutable; copy only the three intended implementation files after committing this plan.",
+      "components": [
+        {
+          "name": "documentation",
+          "paths": [
+            "docs/ARCHITECTURE.md",
+            "docs/LOGIC_FLOW.md",
+            "VERSION"
+          ]
+        }
+      ],
+      "responsibilityChanges": false,
+      "interfaceChanges": [],
+      "dataChanges": [],
+      "ui": {
+        "impact": "none",
+        "states": [],
+        "evidence": []
+      },
+      "rollback": "Revert the successor merge; executable contracts remain unchanged."
+    },
+    "runtimeDependencies": [],
+    "validation": [
+      {
+        "criterion": "AC-04",
+        "commands": [
+          "python3 standard/logs_check.py validate --root ."
+        ],
+        "evidence": "LOGS-PASS"
+      },
+      {
+        "criterion": "AC-05",
+        "commands": [
+          "python3 standard/logs_check.py self-test"
+        ],
+        "evidence": "17 adversarial checks pass"
+      },
+      {
+        "criterion": "AC-07",
+        "commands": [
+          "./project/governance-check.sh"
+        ],
+        "evidence": "GOV-PASS"
+      }
+    ]
+  }
+}
