@@ -1,0 +1,36 @@
+2026-08-14 ticket-006 (agent:codex)
+
+[1] Protected evidence
+    Validator run 31848485364 approved PR #10 head 58f0e0e, then blocked merge.
+    Review-triggered governance run 31848594548 returned GOV-INTENT-003:
+    project/ticket-005/intent.json did not predate implementation.
+
+[2] Remediation
+    ticket-005 moved to BLOCKED so it no longer reserves integration.
+    Allocator created ticket-006 from integrated main under the clone-wide lock.
+    This first commit is intentionally plan-only.
+
+[3] Pre-implementation plan correction
+    GOV-DELIVERY-001 exposed an XS estimate of 15 minutes above the policy's
+    10-minute ceiling. Commit c7e474d corrected only estimatedMinutes before
+    any implementation commit. GOV-PASS followed.
+
+[4] Implementation validation
+    python3 standard/logs_check.py validate --root .
+    LOGS-PASS: 1 stream(s), 2 event(s), 1 error definition(s)
+
+    python3 standard/logs_check.py self-test
+    logs conformance self-test: PASS (17 adversarial checks)
+
+    ./project/governance-check.sh
+    GOV-PASS: passed (0 errors, 0 warnings)
+
+[5] Lossless implementation comparison with PR #10 head 58f0e0e
+    VERSION normalized SHA-256:
+      1f930dd1f133c1f97a94fe3acb8db34372cf4c01ffdb2b3ff4ca72f9494121e9
+    docs/ARCHITECTURE.md normalized SHA-256:
+      759149f332273371683215a4b24cc81437a490d4b97f7ae3d44bc0a747c28504
+    docs/LOGIC_FLOW.md normalized SHA-256:
+      98fc237120e7eade3b559521e1c7f30d20899e52495b7f5fa642f57067bd3850
+    Predecessor and successor digests match for all three files. Normalization
+    removes only one optional terminal blank line.
