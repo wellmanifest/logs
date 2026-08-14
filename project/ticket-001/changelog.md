@@ -17,3 +17,8 @@
   including undocumented codes, malformed headings and non-normalized time.
 - Added POA/CQRS/Event Sourcing diagrams, Protobuf projection mapping, failure
   semantics and safe extension rules to the discoverable runbook.
+
+## 2026-08-13 publication
+
+- Closed after `ifuri-validator-agent` approved and merged pull request #2 at
+  `855f26215e79787b43f40c94176802f353962582`.
