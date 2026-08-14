@@ -27,7 +27,18 @@ be republished as a successor without rewriting the predecessor branch.
 - Imported the predecessor's exact five implementation artifacts only after
   the plan checkpoint and verified their Git object hashes match.
 - Passed logs validation, 17-case self-test, governance and diff checks.
+- Published successor PR #8 from exact head
+  `a52a7f3f12b379847d8fbf4d598649b601f5c708`.
+- Observed that App approval triggered an additional protected governance
+  check. The first Validator run reached merge before that check converged;
+  the bounded exact-head retry merged only after the effective check set was
+  terminal and green.
+- Verified protected merge
+  `4440e9e9a40423715747a57b86e3d9405be5aa4e`, automatic successor-branch
+  deletion, and then closed predecessor PR #7 without deleting its unmerged
+  branch.
 
 ## Blockers
 
-- None inside the existing ticket-004 scope.
+- None. The implementation is merged; this governance-only successor records
+  terminal ticket state and publication receipts.
