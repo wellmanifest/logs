@@ -17,3 +17,11 @@
 - Proved normalized content equivalence with the three intended files from
   rejected PR #10 and passed logs validation, 17 self-tests and governance.
 - Advanced the verified successor to `PUBLICATION` for independent validation.
+
+## [0.2.1] - 2026-08-15
+
+- Recorded exact-head App approval, post-approval policy convergence, protected
+  merge and automatic successor branch cleanup for PR #11.
+- Archived a digest-bound disposition for every path in rejected PR #10 before
+  authorizing its separate delete-before-close lifecycle.
+- Closed ticket-006 only from the integrated default-branch result.
