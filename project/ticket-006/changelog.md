@@ -8,3 +8,11 @@
   plan-first supersession strategy. No implementation file changed.
 - Corrected the `XS` estimate to the policy ceiling of 10 minutes before the
   implementation commit; the approved outcome and delivery budget are unchanged.
+
+## [0.2.0] - 2026-08-15
+
+- Aligned `VERSION` with the already integrated v0.2 contract bundle.
+- Published the v0.2 architecture and logic-flow documentation deferred by
+  ticket-004's implementation-file budget.
+- Proved normalized content equivalence with the three intended files from
+  rejected PR #10 and passed logs validation, 17 self-tests and governance.

@@ -33,6 +33,11 @@ is verified and merged.
 - Corrected the pre-implementation estimate from 15 to 10 minutes after the
   deterministic policy check showed that the declared `XS` class has a
   10-minute ceiling. Scope, file budget and component ownership did not change.
+- Restored `VERSION`, `docs/ARCHITECTURE.md` and `docs/LOGIC_FLOW.md` from PR
+  #10. The successor's normalized SHA-256 digest for each file matches the
+  predecessor; only two redundant terminal blank lines were omitted.
+- Regenerated the ticket index and passed logs validation, all 17 adversarial
+  self-tests, governance and whitespace checks.
 
 ## Blockers
 

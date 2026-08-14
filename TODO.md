@@ -28,7 +28,7 @@
   `docs/ARCHITECTURE.md`,
   `docs/LOGIC_FLOW.md` and `VERSION`. Written under `ticket-004` but reverted
   out of its diff after `GOV-BUDGET-001` capped the ticket at five
-  implementation files. State: `IN_PROGRESS / EDIT`; classification:
+  implementation files. State: `IN_PROGRESS / VALIDATION`; classification:
   `SERVICE / P2 / health`; workstream: `integration`.
 - [ ] Record the v0.2.0 entry in `CHANGELOG.md` and refresh the `README.md`
   status line. Both are owned by the `governance` workstream, so they cannot

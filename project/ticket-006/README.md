@@ -3,7 +3,7 @@
 - **ID**: ticket-006
 - **Owner**: agent:codex
 - **Status**: IN_PROGRESS
-- **Workflow state**: EDIT
+- **Workflow state**: VALIDATION
 - **Created**: 2026-08-14
 
 ## Goal and scope
@@ -27,12 +27,15 @@ unmerged content of ticket-005/PR #10.
 
 - [x] AC-01: The user's autonomous-continuation instruction is recorded as
       SESSION_EXECUTION_AUTHORIZATION for this bounded lossless successor.
-- [ ] AC-02: The plan-only commit predates every implementation change.
-- [ ] AC-03: The three implementation files match PR #10's intended content.
-- [ ] AC-04: `python3 standard/logs_check.py validate --root .` passes.
-- [ ] AC-05: `python3 standard/logs_check.py self-test` passes all 17 checks.
-- [ ] AC-06: `VERSION` equals the contract bundle version `0.2.0`.
-- [ ] AC-07: `./project/governance-check.sh` reports `GOV-PASS`.
+- [x] AC-02: Plan commits `0fcc708` and `c7e474d` predate every
+      implementation change.
+- [x] AC-03: The three implementation files match PR #10's intended content
+      after normalizing its extra terminal blank lines; their normalized
+      SHA-256 digests are identical.
+- [x] AC-04: `python3 standard/logs_check.py validate --root .` passes.
+- [x] AC-05: `python3 standard/logs_check.py self-test` passes all 17 checks.
+- [x] AC-06: `VERSION` equals the contract bundle version `0.2.0`.
+- [x] AC-07: `./project/governance-check.sh` reports `GOV-PASS`.
 
 ## Participants
 
