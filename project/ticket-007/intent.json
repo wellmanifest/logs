@@ -19,5 +19,61 @@
   "stacks": ["docker"],
   "dependsOn": [],
   "conflictsWith": [],
-  "integrationTicket": null
+  "integrationTicket": null,
+  "delivery": {
+    "acceptedBaseSha": "ab268f932dbc09e5091fb8b7b4f4570790fa6254",
+    "targetBranch": "main",
+    "outcome": "Reject stale vendored event schemas before a consumer publishes or deploys an incompatible projection.",
+    "nonGoals": [
+      "No mutation of consumer repositories",
+      "No authority or grant creation",
+      "No change to the canonical event contract"
+    ],
+    "complexity": "S",
+    "estimatedMinutes": 25,
+    "budgets": {
+      "maxImplementationFiles": 2,
+      "maxAffectedComponents": 1,
+      "maxPublicInterfaceChanges": 0,
+      "maxRuntimeDependencies": 0
+    },
+    "architecture": {
+      "status": "accepted",
+      "decision": "Compare semantic canonical JSON from a bounded candidate file with the event schema embedded in the pinned contract bundle; formatting differences pass and semantic drift fails closed.",
+      "components": [
+        {
+          "name": "logs conformance",
+          "paths": ["standard/logs_check.py", "docs/LOGIC_FLOW.md"]
+        }
+      ],
+      "responsibilityChanges": false,
+      "interfaceChanges": [],
+      "dataChanges": [],
+      "ui": {"impact": "none", "states": [], "evidence": []},
+      "rollback": "Revert the conformance change; the canonical contract and existing streams are unchanged."
+    },
+    "runtimeDependencies": [],
+    "validation": [
+      {
+        "criterion": "AC-02",
+        "commands": ["python3 standard/logs_check.py self-test"],
+        "evidence": "canonical adoption passes"
+      },
+      {
+        "criterion": "AC-03",
+        "commands": ["python3 standard/logs_check.py self-test"],
+        "evidence": "stale adoption fails with LOGS-ADOPTION-SCHEMA-DRIFT"
+      },
+      {
+        "criterion": "AC-04",
+        "commands": ["python3 standard/logs_check.py validate --root ."],
+        "evidence": "LOGS-PASS"
+      },
+      {
+        "criterion": "AC-05",
+        "commands": ["./project/governance-check.sh", "docker compose run --rm conformance"],
+        "evidence": "GOV-PASS and container conformance pass"
+      }
+    ]
+  }
 }
