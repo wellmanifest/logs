@@ -3,7 +3,7 @@
 - **ID**: ticket-007
 - **Owner**: unresolved:human
 - **Status**: IN_PROGRESS
-- **Workflow state**: EDIT
+- **Workflow state**: PUBLICATION
 - **Created**: 2026-08-28
 
 ## Goal and scope
@@ -21,10 +21,19 @@ does not grant execution authority.
 
 - [x] AC-01: The user explicitly authorized implementation and direct repair of
       regressions in the owning Wellmanifest standard on 2026-08-28.
-- [ ] AC-02: An exact canonical event schema passes the adoption check.
-- [ ] AC-03: The pre-v0.2 Doctor schema is rejected as stale.
-- [ ] AC-04: Existing repository validation and adversarial self-tests pass.
-- [ ] AC-05: Governance and Docker conformance gates pass.
+- [x] AC-02: An exact canonical event schema passes the adoption check.
+- [x] AC-03: The pre-v0.2 Doctor schema is rejected as stale.
+- [x] AC-04: Existing repository validation and 19-check self-test pass.
+- [x] AC-05: Governance and Docker conformance gates pass.
+
+## Evidence
+
+- `python3 standard/logs_check.py validate --root .` → `LOGS-PASS`.
+- `python3 standard/logs_check.py self-test` → 19 checks pass.
+- Adoption against the corrected Doctor schema → `LOGS-ADOPTION-PASS` bound
+  to contract SHA-256 `643c72ff...e27bfb6`.
+- `./project/governance-check.sh` → `GOV-PASS`.
+- `docker compose run --rm conformance` → `LOGS-PASS`.
 
 ## Participants
 

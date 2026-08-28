@@ -26,6 +26,12 @@ not another prose warning.
 
 - Initialized the bounded ticket and recorded SESSION_EXECUTION_AUTHORIZATION
   from the request to execute this work.
+- Added the bounded `adoption --event-schema` conformance command.
+- Added positive canonical and negative stale-schema regression fixtures to
+  the dependency-free self-test.
+- Documented the rule that a divergent consumer must use a separately
+  versioned projection rather than reuse the canonical schema identity.
+- Verified repository, Docker and governance gates.
 
 ## Blockers
 
