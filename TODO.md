@@ -29,6 +29,11 @@
   `3e1bf6e43800a6191700e1a06f5d52a3f31d44bd`; the successor branch was deleted
   and PR #10 received a digest-bound lossless disposition before cleanup.
 
+- [ ] [`ticket-007`](project/ticket-007/README.md) — reject stale or locally
+  divergent consumer event schemas before publication. State:
+  `IN_PROGRESS / PUBLICATION`; classification: `BUG / P1 / regression`;
+  workstream: `integration`.
+
 ## Planned work
 
 - [ ] Record the v0.2.0 entry in `CHANGELOG.md` and refresh the `README.md`

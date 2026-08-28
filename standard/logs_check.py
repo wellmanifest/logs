@@ -21,6 +21,7 @@ CONTRACT_PATH = Path("contracts/logs.contract.json")
 HELP_PATH = "errors/LOGS-VALIDATION-001.md"
 DIAGNOSTIC_CODE = "LOGS-VALIDATION-001"
 ZERO_HASH = "0" * 64
+MAX_ADOPTED_SCHEMA_BYTES = 1024 * 1024
 CODE_RE = re.compile(r"^[A-Z][A-Z0-9]*(?:-[A-Z0-9]+)+$")
 STREAM_RE = re.compile(r"^[a-z][a-z0-9._-]{0,63}$")
 ID_RE = re.compile(r"^[A-Za-z0-9._:-]{1,128}$")
@@ -167,6 +168,51 @@ def read_json(path: Path, *, rule: str, label: str) -> Any:
         return json.loads(path.read_text("utf-8"))
     except (OSError, UnicodeError, json.JSONDecodeError) as error:
         raise ContractFailure(rule, path.as_posix(), f"{label} is unreadable or invalid") from error
+
+
+def validate_adopted_event_schema(root: Path, candidate_path: Path) -> dict[str, Any]:
+    """Compare an adopted event schema with the canonical semantic schema."""
+    findings: list[Finding] = []
+    contract_sha = ""
+    candidate_sha = ""
+    try:
+        bundle, contract_sha = load_contract(root)
+        try:
+            size = candidate_path.stat().st_size
+        except OSError as error:
+            raise ContractFailure(
+                "LOGS-ADOPTION-SCHEMA-READ",
+                candidate_path.as_posix(),
+                "adopted event schema is unavailable",
+            ) from error
+        if size < 2 or size > MAX_ADOPTED_SCHEMA_BYTES:
+            raise ContractFailure(
+                "LOGS-ADOPTION-SCHEMA-SIZE",
+                candidate_path.as_posix(),
+                "adopted event schema exceeds the bounded input size",
+            )
+        candidate = read_json(
+            candidate_path,
+            rule="LOGS-ADOPTION-SCHEMA-JSON",
+            label="adopted event schema",
+        )
+        candidate_canonical = canonical(candidate)
+        candidate_sha = sha256_bytes(candidate_canonical.encode("utf-8"))
+        if candidate_canonical != canonical(bundle["schemas"]["event"]):
+            raise ContractFailure(
+                "LOGS-ADOPTION-SCHEMA-DRIFT",
+                candidate_path.as_posix(),
+                "adopted event schema differs from the canonical contract; update the vendored schema or declare a separately versioned projection",
+            )
+    except ContractFailure as error:
+        findings.append(finding(error))
+    return {
+        "schema": "wellmanifest.logs/adoption-report/v1",
+        "valid": not findings,
+        "contractSha256": contract_sha,
+        "candidateSchemaSha256": candidate_sha,
+        "findings": [asdict(item) for item in findings],
+    }
 
 
 def _assert_closed_objects(value: Any, path: str = "schemas") -> None:
@@ -1061,7 +1107,28 @@ def run_self_test(source: Path) -> None:
                 pass
             else:
                 raise AssertionError("authority-bearing request was accepted")
-    print("logs conformance self-test: PASS (17 adversarial checks)")
+
+        canonical_schema = Path(temporary) / "canonical-event.schema.json"
+        canonical_schema.write_text(
+            json.dumps(bundle["schemas"]["event"], indent=2) + "\n",
+            encoding="utf-8",
+        )
+        if not validate_adopted_event_schema(source, canonical_schema)["valid"]:
+            raise AssertionError("canonical adopted schema was rejected")
+
+        stale_schema = Path(temporary) / "stale-event.schema.json"
+        stale = copy.deepcopy(bundle["schemas"]["event"])
+        stale["required"].remove("inputHash")
+        stale["properties"].pop("inputHash")
+        stale_schema.write_text(json.dumps(stale, indent=2) + "\n", encoding="utf-8")
+        stale_result = validate_adopted_event_schema(source, stale_schema)
+        if (
+            stale_result["valid"]
+            or stale_result["findings"][0]["rule"]
+            != "LOGS-ADOPTION-SCHEMA-DRIFT"
+        ):
+            raise AssertionError("stale adopted schema was accepted")
+    print("logs conformance self-test: PASS (19 adversarial checks)")
 
 
 def print_report(result: dict[str, Any], output_format: str) -> None:
@@ -1093,6 +1160,12 @@ def build_parser() -> argparse.ArgumentParser:
     request.add_argument("--root", type=Path, default=Path("."))
     request.add_argument("--request", type=Path, required=True)
     request.add_argument("--format", choices=("text", "json"), default="text")
+    adoption = subparsers.add_parser(
+        "adoption", help="validate a consumer's adopted event schema"
+    )
+    adoption.add_argument("--root", type=Path, default=Path("."))
+    adoption.add_argument("--event-schema", type=Path, required=True)
+    adoption.add_argument("--format", choices=("text", "json"), default="text")
     subparsers.add_parser("self-test", help="run positive and adversarial conformance")
     return parser
 
@@ -1107,6 +1180,23 @@ def main(argv: list[str] | None = None) -> int:
     if args.command == "validate":
         result = validate_repository(root)
         print_report(result, args.format)
+        return 0 if result["valid"] else 1
+    if args.command == "adoption":
+        result = validate_adopted_event_schema(root, args.event_schema.resolve())
+        if args.format == "json":
+            print(json.dumps(result, indent=2, sort_keys=True))
+        elif result["valid"]:
+            print(
+                "LOGS-ADOPTION-PASS: event schema matches canonical contract "
+                f"{result['contractSha256']}"
+            )
+        else:
+            for item in result["findings"]:
+                print(
+                    f"{item['code']} {item['severity']} [{item['rule']}] "
+                    f"{item['path']}: {item['message']} "
+                    f"(help: {item['helpPath']})"
+                )
         return 0 if result["valid"] else 1
     try:
         bundle, _ = load_contract(root)

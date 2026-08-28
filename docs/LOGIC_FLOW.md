@@ -1,5 +1,21 @@
 # Logs control-plane logic flow
 
+## Consumer adoption check
+
+A repository that vendors the canonical event schema must prove that its copy
+still has the same semantic JSON as the current contract bundle:
+
+```bash
+python3 standard/logs_check.py adoption \
+  --root /path/to/wellmanifest/logs \
+  --event-schema /path/to/consumer/logs-event.schema.v1.json
+```
+
+The comparison ignores formatting and object-key order but rejects every
+semantic difference, including a missing required field. A consumer that needs
+a different shape must publish a separately versioned projection and a
+declared mapping; it must not reuse `wellmanifest.logs/event/v1`.
+
 ## Event creation
 
 ```mermaid
