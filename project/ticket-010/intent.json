@@ -1,0 +1,52 @@
+{
+  "schema": "new-project.intent/v3",
+  "ticket": "ticket-010",
+  "summary": "Pin governance workflow to new-project 0.19.9",
+  "workstream": "infrastructure",
+  "classification": {
+    "kind": "SERVICE",
+    "priority": "P1",
+    "origin": "requested"
+  },
+  "allowedPaths": [
+    "project/ticket-010/**",
+    "TODO.md",
+    "project/TICKETS.md",
+    ".github/workflows/governance.yml"
+  ],
+  "forbiddenPaths": ["project/ticket-*/user-*.md"],
+  "stacks": [],
+  "dependsOn": [],
+  "conflictsWith": [],
+  "integrationTicket": null,
+  "delivery": {
+    "acceptedBaseSha": "baf4e5c4d683e5727818f403a0a0e6e91d355adc",
+    "targetBranch": "main",
+    "outcome": "Pin the target-owned reusable governance wrapper to published new-project 0.19.9",
+    "nonGoals": [
+      "Do not adopt managed package files in this infrastructure ticket",
+      "Do not widen workstream ownership",
+      "Do not use a mutable tag or branch reference"
+    ],
+    "complexity": "XS",
+    "estimatedMinutes": 10,
+    "budgets": {"maxImplementationFiles": 1, "maxAffectedComponents": 1, "maxPublicInterfaceChanges": 0, "maxRuntimeDependencies": 0},
+    "architecture": {
+      "status": "accepted",
+      "decision": "Advance both immutable SHA fields in the target-owned workflow as one infrastructure change",
+      "components": [
+        {"name": "governance-workflow", "paths": [".github/workflows/governance.yml"]}
+      ],
+      "responsibilityChanges": false,
+      "interfaceChanges": [],
+      "dataChanges": [],
+      "ui": {"impact": "none", "states": [], "evidence": []},
+      "rollback": "Restore the previous immutable SHA in both workflow fields"
+    },
+    "runtimeDependencies": [],
+    "validation": [
+      {"criterion": "AC-01", "commands": ["rg -n 'e750af09ef3d3731e4f57c59d21d7d262057cb88' .github/workflows/governance.yml"], "evidence": "uses and standard-ref match"},
+      {"criterion": "AC-02", "commands": ["./project/governance-check.sh --actor agent"], "evidence": "Infrastructure scope passes"}
+    ]
+  }
+}

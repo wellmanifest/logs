@@ -25,7 +25,7 @@ jobs:
     permissions:
       contents: read
       pull-requests: read
-    uses: wellmanifest/new-project/.github/workflows/governance.yml@63a03d0c2ec417f8eab9a6edb3c4ed654937a1ac
+    uses: wellmanifest/new-project/.github/workflows/governance.yml@e750af09ef3d3731e4f57c59d21d7d262057cb88
     with:
-      standard-ref: 63a03d0c2ec417f8eab9a6edb3c4ed654937a1ac
+      standard-ref: e750af09ef3d3731e4f57c59d21d7d262057cb88
       trusted-validator-apps: 'ifuri-validator-agent[bot]'
