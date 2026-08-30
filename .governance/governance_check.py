@@ -1551,7 +1551,57 @@ def atomic_adoption_binding_paths(
     delivery = intent.get("delivery")
     if not isinstance(delivery, dict) or "standardAdoption" not in delivery:
         return set()
+    adoption = delivery["standardAdoption"]
+    if not isinstance(adoption, dict):
+        return set()
     bindings: set[str] = set()
+    revision = adoption.get("toRevision")
+    registry_path = next(
+        (
+            root / candidate
+            for candidate in (
+                ".governance/adoption-bindings.json",
+                "governance/adoption-bindings.json",
+            )
+            if (root / candidate).is_file()
+        ),
+        None,
+    )
+    if registry_path is not None and isinstance(revision, str):
+        try:
+            registry = load_json(registry_path)
+            workflow_paths = registry.get("revisionBoundWorkflowPaths")
+            registry_valid = (
+                set(registry) == {"schema", "revisionBoundWorkflowPaths"}
+                and registry.get("schema") == "new-project.adoption-bindings/v1"
+                and isinstance(workflow_paths, list)
+                and bool(workflow_paths)
+                and len(workflow_paths) == len(set(workflow_paths))
+                and all(
+                    isinstance(path, str)
+                    and re.fullmatch(r"[A-Za-z0-9._/-]+\.ya?ml", path) is not None
+                    and relative_pattern(path)
+                    for path in workflow_paths
+                )
+                and re.fullmatch(r"[a-f0-9]{40}", revision) is not None
+            )
+            if registry_valid:
+                uses_pattern = re.compile(
+                    r"(?m)^\s*uses:\s*wellmanifest/new-project/\.github/workflows/"
+                    r"governance\.yml@([a-f0-9]{40})\s*(?:#.*)?$"
+                )
+                ref_pattern = re.compile(
+                    r"(?m)^\s*standard-ref:\s*([a-f0-9]{40})\s*(?:#.*)?$"
+                )
+                for raw_path in workflow_paths:
+                    workflow_path = safe_repo_path(root, raw_path)
+                    if not workflow_path.is_file():
+                        continue
+                    content = workflow_path.read_text(encoding="utf-8")
+                    if uses_pattern.findall(content) == [revision] and ref_pattern.findall(content) == [revision]:
+                        bindings.add(raw_path)
+        except (OSError, UnicodeError, json.JSONDecodeError, TypeError, ValueError):
+            pass  # Lock and ownership validation remain fail closed.
     contract_path = next(
         (
             root / candidate

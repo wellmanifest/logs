@@ -5,6 +5,8 @@
     ".githooks/pre-commit": "fa07e8363e6b6d9a8b6d975eaa3cb46a089f66dce53c01e305235ee61e057054",
     ".github/copilot-instructions.md": "b31f9ba957ce108a83851f48f8dbff8b4301d1c744a77fe76914e6bb8499aca3",
     ".github/workflows/new-project-governance.yml": "1b7115db5f6948706d209748177219736041ca9f106795f489e2b2c1c874f454",
+    ".governance/adoption-bindings.json": "45339fcf7e2bcf0be0e0bfad0e66499cf37cebf15013a031d0bdba87f16d00fc",
+    ".governance/adoption-bindings.schema.json": "b44798f23a95ef6f73defa45b4b0ef7f68ddbac012b753e913d6cd2f0f7b9943",
     ".governance/agent-hosts.json": "d4565102018a634307d941173fdea5da04c2cce494a979199a463d318dab41a0",
     ".governance/agent-hosts.schema.json": "46a3e39eb35f5ad34363a5aa1394cc0db2304f48ee8d816c80615dc565c3c360",
     ".governance/agent_host_check.py": "19194749dda869308a5804218a7642b265c25e010a6f2fbcfe2ab827b09c8681",
@@ -29,12 +31,12 @@
     ".governance/error/GOV-WORKTREE-OVERLAP.md": "b430b153683c22a007d9e86aa1e89394eba7c7e8bbdd286342786df090f9d289",
     ".governance/error/README.md": "e8486dd29f52ca3fee96ed6881a62c38141864cde5aa1adea2b16d22b2feefaa",
     ".governance/generate_required_checks.py": "691c0b367d183aa9fafeb93303fc091053d61d3bee20695b2c9e7d0807fc5a47",
-    ".governance/governance_check.py": "8f35cba234b80ff82725fe2d3823dc5765067b3978531880a8000b0a71749d4c",
+    ".governance/governance_check.py": "f2b5ed998786a86900d549615a4430e8bd0d1ff79f5d509859401ec12264a3a9",
     ".governance/intent.schema.json": "96833db7b244b4dd8f33a30b276ccaf3afbee03e28d1519d8e89b2998e44b391",
     ".governance/lock.schema.json": "ad80c98f800a4a3310870336dcdaf0aa689cc4988f71084d25d76bea2df1242f",
-    ".governance/manifest.base.json": "37e6fb72016bd04808ba5c7fd8241e8eee1d5eef530a56cf0d4ea6e0a67cca47",
+    ".governance/manifest.base.json": "66f055be6f0b96359a498778097e77a80d8ec04626003249da40bc1df6dd6ed1",
     ".governance/manifest.schema.json": "06636922802c9529b97603f30083edda61b66dbbb01643eaeb8f7c5a03dd55b5",
-    ".governance/package-manifest.json": "6016a2eadbd99faaad87bbf286b8b99c954b1082bb8048ca8171805cc41bf736",
+    ".governance/package-manifest.json": "06d1e215c219fb215073c0daea10fe80e1cd1fe5d0469333b3c5d918fb6051dc",
     ".governance/remediation-intent.schema.json": "ab895e7ca0d83aef4c7d3eab674f14bcb0e0a0375298fdb3496d535dc9184d66",
     ".governance/remediation-intent.template.dsl.json": "a3eb01c54fe678f3fcebb88103ac4eb02f5dd24016b2ba9552814b5e442dfb34",
     ".governance/remediation_intent.py": "39576af00834816179ba266991342c7bea71ea0653af953e47a45958889b9a36",
@@ -68,7 +70,7 @@
     "id": "wellmanifest/new-project",
     "publicationStatus": "published",
     "sourceRepository": "wellmanifest/new-project",
-    "sourceRevision": "e750af09ef3d3731e4f57c59d21d7d262057cb88",
-    "version": "0.19.9"
+    "sourceRevision": "edce26953b46d3ba4096b1942bdf86bcce4edaf0",
+    "version": "0.19.10"
   }
 }

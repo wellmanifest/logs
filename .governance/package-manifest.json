@@ -26,6 +26,18 @@
       "executable": false
     },
     {
+      "source": "governance/adoption-bindings.json",
+      "target": ".governance/adoption-bindings.json",
+      "strategy": "managed",
+      "executable": false
+    },
+    {
+      "source": "governance/adoption-bindings.schema.json",
+      "target": ".governance/adoption-bindings.schema.json",
+      "strategy": "managed",
+      "executable": false
+    },
+    {
       "source": "governance/change-evaluation.schema.json",
       "target": ".governance/change-evaluation.schema.json",
       "strategy": "managed",

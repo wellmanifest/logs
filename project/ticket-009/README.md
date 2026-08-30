@@ -1,4 +1,4 @@
-# Ticket 009: Adopt new-project 0.19.9 dynamic registries
+# Ticket 009: Adopt new-project 0.19.10 dynamic registries
 
 - **ID**: ticket-009
 - **Owner**: unresolved:human
@@ -8,7 +8,7 @@
 
 ## Goal and scope
 
-Adopt the immutable `wellmanifest/new-project` 0.19.9 package so ticket
+Adopt the immutable `wellmanifest/new-project` 0.19.10 package so ticket
 allocation and governance checks resolve lifecycle statuses and workstreams
 from the repository manifest instead of stale hardcoded projections.
 
@@ -19,12 +19,15 @@ treat Markdown as a terminal receipt.
 The ticket uses the manifest-declared `governance` workstream. Managed files
 that cross target ownership are not local exceptions: the gate derives their
 closed set from the immutable package manifest, base/head locks and verified
-content digests. Non-managed target files remain under their own workstreams.
+content digests. The same managed registry declares the exact revision-bound
+workflow path, so the wrapper and both of its immutable SHA pins can advance in
+this transaction without a hardcoded runtime exception. Non-managed target
+files remain under their own workstreams.
 
 ## Acceptance criteria
 
 - [x] AC-01: the lock pins published revision
-      `e750af09ef3d3731e4f57c59d21d7d262057cb88` and version 0.19.9.
+      `edce26953b46d3ba4096b1942bdf86bcce4edaf0` and version 0.19.10.
 - [x] AC-02: every managed target matches its recorded digest and the local
       manifest keeps repository-owned extensions.
 - [x] AC-03: governance allocation no longer blocks new work because ticket
