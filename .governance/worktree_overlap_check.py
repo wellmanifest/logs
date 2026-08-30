@@ -21,6 +21,28 @@ from pathlib import Path
 from typing import Any
 from urllib.parse import urlparse
 
+import importlib.util
+import sys
+
+_previous_bytecode_policy = sys.dont_write_bytecode
+sys.dont_write_bytecode = True
+try:
+    try:
+        from ticket_activity import ActivityError, resolve as resolve_ticket_activity
+    except ModuleNotFoundError:
+        _activity_spec = importlib.util.spec_from_file_location(
+            "ticket_activity", Path(__file__).with_name("ticket_activity.py")
+        )
+        if _activity_spec is None or _activity_spec.loader is None:
+            raise
+        _activity_module = importlib.util.module_from_spec(_activity_spec)
+        sys.modules[_activity_spec.name] = _activity_module
+        _activity_spec.loader.exec_module(_activity_module)
+        ActivityError = _activity_module.ActivityError
+        resolve_ticket_activity = _activity_module.resolve
+finally:
+    sys.dont_write_bytecode = _previous_bytecode_policy
+
 
 REPORT_SCHEMA = "new-project.worktree-overlap-report/v1"
 SCP_REMOTE_RE = re.compile(r"^(?:[^@/]+@)?([^:/]+):(.+)$")
@@ -68,6 +90,7 @@ class Checkout:
     dirty_paths: tuple[str, ...]
     changed_paths: tuple[str, ...]
     tickets: tuple[TicketScope, ...]
+    activity_errors: tuple[str, ...]
 
 
 class AuditError(RuntimeError):
@@ -362,26 +385,43 @@ def changed_paths(path: Path, ignore: tuple[str, ...]) -> tuple[str, ...]:
     return tuple(sorted(name for name in names if name and not path_ignored(name, ignore)))
 
 
-def ticket_active(directory: Path) -> bool:
-    readme = directory / "README.md"
-    if not readme.is_file():
-        return False
-    try:
-        text = readme.read_text(encoding="utf-8")
-    except OSError:
-        return False
-    return bool(re.search(r"^\s*-\s+\*\*Status\*\*:\s*IN_PROGRESS\b", text, re.I | re.M))
+def active_statuses(root: Path) -> set[str]:
+    for candidate in (root / ".governance/manifest.json", root / "governance/manifest.hub.json"):
+        if not candidate.is_file():
+            continue
+        try:
+            value = json.loads(candidate.read_text(encoding="utf-8"))
+            statuses = value["ticket"]["activeStatuses"]
+        except (OSError, json.JSONDecodeError, KeyError, TypeError) as error:
+            raise AuditError(f"ticket status registry is invalid: {error}") from error
+        if not isinstance(statuses, list) or not statuses or not all(
+            isinstance(item, str) and item for item in statuses
+        ):
+            raise AuditError("ticket status registry has no valid activeStatuses")
+        return set(statuses)
+    # A repository without the ticket contract still receives physical dirty
+    # path protection. It simply contributes no intent-level ticket scopes.
+    return set()
 
 
-def ticket_scopes(root: Path) -> tuple[TicketScope, ...]:
+def ticket_scopes(root: Path) -> tuple[tuple[TicketScope, ...], tuple[str, ...]]:
     project = root / "project"
     if not project.is_dir():
-        return ()
+        return (), ()
     scopes: list[TicketScope] = []
+    errors: list[str] = []
+    statuses = active_statuses(root)
+    if not statuses:
+        return (), ()
     for directory in sorted(project.iterdir(), key=lambda item: item.name):
         if not directory.is_dir() or TICKET_DIRECTORY_RE.fullmatch(directory.name) is None:
             continue
-        if not ticket_active(directory):
+        try:
+            resolution = resolve_ticket_activity(root, directory, statuses)
+        except ActivityError as error:
+            errors.append(f"{directory.name}: {error}")
+            resolution = None
+        if resolution is not None and not resolution.active:
             continue
         intent_path = directory / "intent.json"
         intent: dict[str, Any] = {}
@@ -402,7 +442,7 @@ def ticket_scopes(root: Path) -> tuple[TicketScope, ...]:
                 path=str(directory.resolve()),
             )
         )
-    return tuple(scopes)
+    return tuple(scopes), tuple(errors)
 
 
 def has_pending_work(path: Path, dirty: bool) -> bool:
@@ -432,6 +472,7 @@ def inspect_checkout(path: Path, ignore: tuple[str, ...]) -> Checkout:
     branch = run_git(path, "branch", "--show-current") or None
     dirty = bool(run_git(path, "status", "--porcelain=v1", "--untracked-files=all"))
     pending = has_pending_work(path, dirty)
+    scopes, activity_errors = ticket_scopes(path) if pending else ((), ())
     return Checkout(
         path=path.resolve(),
         common_git_dir=common,
@@ -444,7 +485,8 @@ def inspect_checkout(path: Path, ignore: tuple[str, ...]) -> Checkout:
         # expensive reads it would only feed into comparisons that are skipped.
         dirty_paths=dirty_paths(path, ignore) if pending else (),
         changed_paths=changed_paths(path, ignore) if pending else (),
-        tickets=ticket_scopes(path) if pending else (),
+        tickets=scopes,
+        activity_errors=activity_errors,
     )
 
 
@@ -593,6 +635,15 @@ def overlap_findings(
     focus_checkout: Path | None = None,
 ) -> list[Finding]:
     findings: list[Finding] = []
+    for checkout in checkouts:
+        for error in checkout.activity_errors:
+            findings.append(Finding(
+                code="GOV-TICKET-ACTIVITY-001",
+                severity="error",
+                message="Ticket activity could not be resolved safely.",
+                remediation="Reconcile or quarantine the clone-external registry from protected evidence; follow error/GOV-TICKET-ACTIVITY.md.",
+                evidence={"checkout": str(checkout.path), "detail": error, "fallback": "remain-active"},
+            ))
     groups: dict[str, list[Checkout]] = {}
     for checkout in checkouts:
         groups.setdefault(checkout.identity, []).append(checkout)

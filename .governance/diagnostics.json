@@ -316,6 +316,11 @@
       "remediation": "Keep the owning ticket IN_PROGRESS through implementation publication; after merge, let the protected controller emit the external terminal receipt without a repository closure commit.",
       "documentation": "error/GOV-TICKET-001.md"
     },
+    "GOV-TICKET-ACTIVITY-001": {
+      "message": "Ticket activity cannot be resolved safely from the managed policy and clone-external terminal receipt registry.",
+      "remediation": "Keep the status projection active, then reconcile or recover the clone-external registry from protected evidence.",
+      "documentation": "error/GOV-TICKET-ACTIVITY.md"
+    },
     "GOV-TICKET-002": {
       "message": "More than one active ticket exists where the manifest permits only one.",
       "remediation": "Continue the matching ticket and move unrelated waiting work to BACKLOG, PLAN or BLOCKED.",
