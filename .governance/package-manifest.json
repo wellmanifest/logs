@@ -56,6 +56,24 @@
       "executable": false
     },
     {
+      "source": "governance/ticket-activity.json",
+      "target": ".governance/ticket-activity.json",
+      "strategy": "managed",
+      "executable": false
+    },
+    {
+      "source": "governance/ticket-activity.schema.json",
+      "target": ".governance/ticket-activity.schema.json",
+      "strategy": "managed",
+      "executable": false
+    },
+    {
+      "source": "governance/terminal-receipt-registry.schema.json",
+      "target": ".governance/terminal-receipt-registry.schema.json",
+      "strategy": "managed",
+      "executable": false
+    },
+    {
       "source": "governance/remediation-intent.schema.json",
       "target": ".governance/remediation-intent.schema.json",
       "strategy": "managed",
@@ -88,6 +106,12 @@
     {
       "source": "error/GOV-TICKET-ALLOCATION.md",
       "target": ".governance/error/GOV-TICKET-ALLOCATION.md",
+      "strategy": "managed",
+      "executable": false
+    },
+    {
+      "source": "error/GOV-TICKET-ACTIVITY.md",
+      "target": ".governance/error/GOV-TICKET-ACTIVITY.md",
       "strategy": "managed",
       "executable": false
     },
@@ -148,6 +172,12 @@
     {
       "source": "scripts/worktree_overlap_check.py",
       "target": ".governance/worktree_overlap_check.py",
+      "strategy": "managed",
+      "executable": true
+    },
+    {
+      "source": "scripts/ticket_activity.py",
+      "target": ".governance/ticket_activity.py",
       "strategy": "managed",
       "executable": true
     },

@@ -1,14 +1,16 @@
 # Logs control-plane architecture
 
-Status: accepted v0.2 design. The v0.1 design came from `ticket-001`; `ticket-004`
-revised it against the first real deployment (see
-[Deployment evidence](#deployment-evidence-c2004)).
+Status: accepted v0.3 design. The v0.1 design came from `ticket-001`; `ticket-004`
+revised it against the first real deployment, and `ticket-011` added bounded
+adopter-owned error catalogs without moving runtime ownership into this
+standard (see [Deployment evidence](#deployment-evidence-c2004)).
 
 ## Scope
 
 `wellmanifest/logs` controls the repository representation of operational
-events and reusable error knowledge. It validates facts; it is not a general
-logging backend, a secret store or a generic command executor.
+events and reusable error knowledge. It validates facts and adopter
+conformance; it is not a general logging backend, a secret store, the owner of
+product-specific diagnoses or a generic command executor.
 
 The canonical cross-language model is Protobuf. Git stores deterministic JSON
 projections because JSONL supports review, replay and one-event-per-line
@@ -96,6 +98,42 @@ verification, prohibited shortcuts and related event types.
 The checker validates the catalog bidirectionally: emitted codes cannot lack a
 page, and pages cannot invent codes not present in the contract bundle.
 
+An adopter keeps its runtime codes in its own repository. Its closed
+`wellmanifest.logs/adopter-error-catalog/v1` manifest pins the exact canonical
+contract SHA-256, declares one non-`LOGS` uppercase namespace, a confined
+Markdown directory and the complete sorted code set. The `error-adoption`
+query validates those pages with the same `wellmanifest.logs/error/v1` shape
+and category vocabulary. It never registers a code in Wellmanifest, appends an
+event or authorizes the documented remediation.
+
+### ERROR → Strategy → Policy
+
+The three layers have separate ownership and authority:
+
+- **ERROR** is a stable diagnosis: meaning, possible causes, verification,
+  owner and prohibited shortcuts. It records a fact; it neither grants
+  permission nor chooses an implementation.
+- **Strategy** is a target-owned proposal for leaving the error state. A target
+  may offer retry, compensate, defer, degrade, escalate or no-change exits.
+  Strategies remain replaceable and propose-only; this standard does not force
+  one command, algorithm, tool or topology.
+- **Policy** is a closed set of invariants and prohibitions that filters
+  strategies. Every state policy can create must retain at least one safe
+  terminal route, including escalation or no-change when automatic repair is
+  unsafe.
+
+The reusable standard therefore defines forbidden outcomes, not a universal
+recipe: no secret-bearing diagnosis, no authority inferred from a runbook, no
+overwrite of published history, no fabricated success, no destructive repair
+from unverified evidence and no namespace impersonation. Runtime repositories
+choose how to implement an admissible strategy and retain ownership of their
+codes and runbooks.
+
+Contract revisions are immutable files. Historical events continue to point
+to `contracts/logs.contract.json` v0.2 bytes; v0.3 is published separately as
+`contracts/logs.contract.v0.3.json`. A later revision adds a new file and a
+successor event instead of changing evidence referenced by existing history.
+
 ## Deployment evidence (c2004)
 
 v0.1 was designed against a single bootstrap event. `maskservice/c2004` ran an
@@ -137,3 +175,11 @@ than no field, because validation cannot distinguish absence from a value.
    validation must be able to tell absence from a value.
 10. Every event binds its command input with `inputHash`, so an event carrying
     no file evidence is still verifiable.
+11. A published contract path is immutable; successor contracts use a new
+    versioned path and a successor event.
+12. Adopter error namespaces and runbooks stay in the adopter repository and
+    cannot use the standard-owned `LOGS` prefix.
+13. Every policy-created nonterminal state has a documented safe exit; a
+    rejection must not reserve work forever or make recovery impossible.
+14. Error identity and forbidden outcomes are standardized; implementation
+    recipes remain target-owned and replaceable.

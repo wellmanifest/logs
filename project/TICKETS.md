@@ -9,4 +9,5 @@
 | **ticket-004** | [`README.md`](./ticket-004/README.md) | [`preprompt.md`](./ticket-004/preprompt.md) | - |  [`ai-claude.md`](./ticket-004/ai-claude.md) [`ai-codex.md`](./ticket-004/ai-codex.md) |  [`ai-claude-logs.txt`](./ticket-004/ai-claude-logs.txt) [`ai-codex-logs.txt`](./ticket-004/ai-codex-logs.txt) | [`changelog.md`](./ticket-004/changelog.md) |
 | **ticket-006** | [`README.md`](./ticket-006/README.md) | [`preprompt.md`](./ticket-006/preprompt.md) | - |  [`ai-codex.md`](./ticket-006/ai-codex.md) |  [`ai-codex-logs.txt`](./ticket-006/ai-codex-logs.txt) | [`changelog.md`](./ticket-006/changelog.md) |
 | **ticket-007** | [`README.md`](./ticket-007/README.md) | [`preprompt.md`](./ticket-007/preprompt.md) | - |  [`ai-codex.md`](./ticket-007/ai-codex.md) |  [`ai-codex-logs.txt`](./ticket-007/ai-codex-logs.txt) | [`changelog.md`](./ticket-007/changelog.md) |
+| **ticket-009** | [`README.md`](./ticket-009/README.md) | [`preprompt.md`](./ticket-009/preprompt.md) | - |  [`ai-codex.md`](./ticket-009/ai-codex.md) |  [`ai-codex-logs.txt`](./ticket-009/ai-codex-logs.txt) | [`changelog.md`](./ticket-009/changelog.md) |
 <!-- AUTO:TICKET_INDEX:END -->

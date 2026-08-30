@@ -1,0 +1,78 @@
+{
+  "schema": "new-project.intent/v3",
+  "ticket": "ticket-011",
+  "summary": "Validate adopter-owned error catalogs",
+  "workstream": "integration",
+  "classification": {
+    "kind": "FEATURE",
+    "priority": "P1",
+    "origin": "requested"
+  },
+  "allowedPaths": [
+    "project/ticket-011/**",
+    "project/TICKETS.md",
+    ".governance/**",
+    "project/new-ticket.sh",
+    "standard/logs_check.py",
+    "contracts/logs.contract.v0.3.json",
+    "docs/ARCHITECTURE.md",
+    "docs/LOGIC_FLOW.md",
+    "VERSION",
+    "logs/control.jsonl"
+  ],
+  "forbiddenPaths": ["project/ticket-*/user-*.md"],
+  "stacks": ["docker"],
+  "dependsOn": [],
+  "conflictsWith": [],
+  "integrationTicket": null,
+  "delivery": {
+    "acceptedBaseSha": "b19d12b69ed092ab98ee8a57442f4b2de43f6482",
+    "targetBranch": "main",
+    "outcome": "Adopt recoverable ticket activity resolution, then validate adopter-owned stable error catalogs against the immutable Wellmanifest Logs contract without transferring runtime ownership or authority.",
+    "nonGoals": [
+      "No runtime log backend",
+      "No product-specific error codes in wellmanifest/logs",
+      "No remediation execution or authority grant",
+      "No rewrite of published event streams"
+    ],
+    "complexity": "L",
+    "estimatedMinutes": 30,
+    "budgets": {
+      "maxImplementationFiles": 15,
+      "maxAffectedComponents": 5,
+      "maxPublicInterfaceChanges": 2,
+      "maxRuntimeDependencies": 0
+    },
+    "architecture": {
+      "status": "accepted",
+      "decision": "First adopt one immutable managed governance package and resolve historical activity from externally stored receipts verified against repository identity and Git ancestry. Then add a separate adopter-error-catalog manifest and read-only validation command. The manifest pins the canonical contract digest, owns one uppercase namespace, declares the exact code set and points to a confined Markdown directory.",
+      "components": [
+        {"name": "governance adoption", "paths": [".governance/**", "project/new-ticket.sh"]},
+        {"name": "logs contract", "paths": ["contracts/logs.contract.v0.3.json", "VERSION", "logs/control.jsonl"]},
+        {"name": "conformance", "paths": ["standard/logs_check.py"]},
+        {"name": "adoption guidance", "paths": ["docs/ARCHITECTURE.md", "docs/LOGIC_FLOW.md"]}
+      ],
+      "responsibilityChanges": false,
+      "interfaceChanges": [
+        "wellmanifest/new-project adoption 0.19.10 -> 0.19.11",
+        "New error-adoption conformance command and report",
+        "Additional closed operational error categories"
+      ],
+      "dataChanges": ["clone-external append-only terminal receipt registry"],
+      "ui": {"impact": "none", "states": [], "evidence": []},
+      "rollback": "Revert the new command and v0.3 category additions; existing v0.2 event bytes and repository validation remain unchanged."
+    },
+    "runtimeDependencies": [],
+    "standardAdoption": {
+      "sourceRepository": "wellmanifest/new-project",
+      "fromRevision": "edce26953b46d3ba4096b1942bdf86bcce4edaf0",
+      "toRevision": "76667407e86d21744411e05d1257e922715b8751"
+    },
+    "validation": [
+      {"criterion": "AC-02", "commands": ["python3 standard/logs_check.py self-test"], "evidence": "valid adopter catalog passes"},
+      {"criterion": "AC-03", "commands": ["python3 standard/logs_check.py self-test"], "evidence": "adversarial adopter catalogs fail closed"},
+      {"criterion": "AC-05", "commands": ["python3 standard/logs_check.py validate --root .", "docker compose run --rm conformance", "docker compose run --rm -v /root/.cache proto", "./project/governance-check.sh --actor agent"], "evidence": "all deterministic gates pass"},
+      {"criterion": "AC-06", "commands": ["goal governance adopt --source-revision 76667407e86d21744411e05d1257e922715b8751 --target-root . --check", "python3 .governance/ticket_activity.py --root . resolve --ticket-dir project/ticket-007 --active-status IN_PROGRESS", "python3 .governance/ticket_activity.py --root . resolve --ticket-dir project/ticket-009 --active-status IN_PROGRESS"], "evidence": "managed files match the immutable package and both verified merge receipts resolve inactive"}
+    ]
+  }
+}
