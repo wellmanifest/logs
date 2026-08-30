@@ -2,6 +2,11 @@
 
 ## Active work
 
+- [ ] [`ticket-009`](project/ticket-009/README.md) — adopt immutable
+  `wellmanifest/new-project` 0.19.9 so lifecycle and workstream vocabulary are
+  resolved from dynamic governance registries. State: `IN_PROGRESS / PUBLICATION`;
+  classification: `SERVICE / P1 / requested`; workstream: `governance`.
+
 - [x] [`ticket-001`](project/ticket-001/README.md) — define the canonical
   Protobuf model, closed JSON/GBNF projections, hash-chained `logs/*.jsonl`,
   structured `errors/{CODE}.md`, deterministic conformance and POA/CQRS/Event

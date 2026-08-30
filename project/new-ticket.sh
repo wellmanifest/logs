@@ -23,7 +23,7 @@ Usage: ./project/new-ticket.sh [options]
 
   -t, --title TITLE       Ticket title
   -a, --agent ID         Agent provider/id used for ai-{ID}.md
-  -w, --workstream ID    Required workstream declared in the governance manifest
+  -w, --workstream ID    Required workstream from the governance registry
   -u, --users IDS        Compatibility input only; human files are not created
   -k, --kind KIND        Work kind; default SERVICE
   -p, --priority P       Work priority; default P2
@@ -113,8 +113,60 @@ if [[ ! "$AGENT" =~ ^[a-z0-9][a-z0-9._-]*$ ]]; then
   exit 2
 fi
 
+governance_manifest() {
+  local candidate
+  for candidate in .governance/manifest.json governance/manifest.hub.json; do
+    if [[ -f "$candidate" ]]; then
+      printf '%s' "$candidate"
+      return 0
+    fi
+  done
+  return 1
+}
+
+if ! GOVERNANCE_MANIFEST="$(governance_manifest)"; then
+  echo "GOV-MANIFEST-001: governance registry not found; cannot allocate a ticket." >&2
+  echo "  remediation: restore .governance/manifest.json in an adopter or governance/manifest.hub.json in the hub." >&2
+  exit 1
+fi
+
+if ! REGISTRY_VALUES="$(python3 - "$GOVERNANCE_MANIFEST" <<'PY'
+import json
+import sys
+
+with open(sys.argv[1], encoding="utf-8") as stream:
+    manifest = json.load(stream)
+ticket = manifest.get("ticket")
+coordination = manifest.get("coordination")
+statuses = ticket.get("activeStatuses") if isinstance(ticket, dict) else None
+workstreams = coordination.get("workstreams") if isinstance(coordination, dict) else None
+if (
+    manifest.get("schema") != "new-project.governance/v2"
+    or not isinstance(statuses, list)
+    or not statuses
+    or any(not isinstance(item, str) or not item for item in statuses)
+    or len(statuses) != len(set(statuses))
+    or not isinstance(workstreams, dict)
+    or not workstreams
+    or any(not isinstance(item, str) or not item for item in workstreams)
+):
+    raise SystemExit(1)
+for status in statuses:
+    print(f"status\t{status}")
+for workstream in sorted(workstreams):
+    print(f"workstream\t{workstream}")
+PY
+)"; then
+  echo "GOV-MANIFEST-001: governance registry is invalid: $GOVERNANCE_MANIFEST" >&2
+  echo "  remediation: restore a valid governance/v2 ticket and coordination registry." >&2
+  exit 1
+fi
+
+ACTIVE_STATUSES="$(printf '%s\n' "$REGISTRY_VALUES" | sed -n 's/^status[[:space:]]//p')"
+WORKSTREAM_REGISTRY="$(printf '%s\n' "$REGISTRY_VALUES" | sed -n 's/^workstream[[:space:]]//p')"
+
 if [[ -z "$WORKSTREAM" ]]; then
-  echo "Workstream is required; choose an id declared in .governance/manifest.json" >&2
+  echo "Workstream is required; choose an id declared in $GOVERNANCE_MANIFEST" >&2
   exit 2
 fi
 
@@ -123,10 +175,17 @@ if [[ ! "$WORKSTREAM" =~ ^[a-z0-9][a-z0-9-]*$ ]]; then
   echo "Workstream id must match [a-z0-9][a-z0-9-]*" >&2
   exit 2
 fi
+if ! printf '%s\n' "$WORKSTREAM_REGISTRY" | grep -Fxq -- "$WORKSTREAM"; then
+  echo "GOV-WORKSTREAM-001: workstream '$WORKSTREAM' is not declared in $GOVERNANCE_MANIFEST." >&2
+  echo "  accepted: $(printf '%s' "$WORKSTREAM_REGISTRY" | tr '\n' ' ')" >&2
+  exit 1
+fi
 
 is_active_ticket() {
-  local readme="$1/README.md"
-  [[ -f "$readme" ]] && grep -Eiq '^-[[:space:]]+\*\*Status\*\*:[[:space:]]*IN_PROGRESS([[:space:]]|$)' "$readme"
+  local readme="$1/README.md" status
+  [[ -f "$readme" ]] || return 1
+  status="$(sed -nE 's/^-[[:space:]]+\*\*Status\*\*:[[:space:]]*([^[:space:]]+).*/\1/p' "$readme" | head -n 1)"
+  [[ -n "$status" ]] && printf '%s\n' "$ACTIVE_STATUSES" | grep -Fxq -- "$status"
 }
 
 # The dimension vocabularies live in the work classification contract, which is
@@ -216,6 +275,13 @@ refs_highest() {
 
 highest=0
 conflicting_ticket=""
+current_branch="$(git symbolic-ref --quiet --short HEAD 2>/dev/null || true)"
+if [[ "$current_branch" =~ ticket[-/]([0-9]{3}) ]]; then
+  current_ticket="project/ticket-${BASH_REMATCH[1]}"
+  if is_active_ticket "$current_ticket"; then
+    conflicting_ticket="$current_ticket"
+  fi
+fi
 if git rev-parse --git-dir >/dev/null 2>&1; then
   highest="$(refs_highest)"
   if [[ -n "$allocation_state" && -f "$allocation_state" ]]; then
@@ -235,7 +301,7 @@ if [[ -d project ]]; then
     [[ "$number" =~ ^[0-9]+$ ]] || continue
     decimal=$((10#$number))
     (( decimal > highest )) && highest=$decimal
-    if is_active_ticket "$dir"; then
+    if [[ -z "$current_branch" ]] && is_active_ticket "$dir"; then
       active_workstream="$(sed -nE 's/^[[:space:]]*"workstream"[[:space:]]*:[[:space:]]*"([a-z0-9-]+)".*/\1/p' "$dir/intent.json" 2>/dev/null | head -n 1)"
       if [[ -z "$active_workstream" || "$active_workstream" == "unresolved" || "$WORKSTREAM" == "unresolved" || "$active_workstream" == "$WORKSTREAM" ]]; then
         conflicting_ticket="$dir"
@@ -246,7 +312,7 @@ fi
 
 if [[ -n "$conflicting_ticket" && "$FORCE_NEW" != true ]]; then
   echo "Active ticket conflicts with workstream '$WORKSTREAM': $conflicting_ticket" >&2
-  echo "Continue it, choose a distinct declared workstream, close/cancel it, or use --force-new after an explicit human decision." >&2
+  echo "Continue it, or return to the default branch before allocating a distinct workstream." >&2
   exit 3
 fi
 
@@ -256,8 +322,6 @@ ticket_id="ticket-$ticket_num"
 ticket_dir="project/$ticket_id"
 timestamp="$(date -u +"%Y-%m-%dT%H:%M:%SZ")"
 date_only="${timestamp%%T*}"
-agent_file="ai-$AGENT.md"
-agent_log="ai-$AGENT-logs.txt"
 
 if ! mkdir "$ticket_dir" 2>/dev/null; then
   echo "GOV-TICKET-LOCK-003: ticket directory already exists: $ticket_dir" >&2
@@ -337,29 +401,10 @@ To be completed from human-owned input.
 
 - [ ] AC-01: Scope is approved by a human owner.
 
-## Participants
+## Tracking boundary
 
-- Human participant: unresolved; no user-* file was created by this script.
-- Agent participant: [$agent_file]($agent_file)
-EOF
-fi
-
-if [[ -f template/files/preprompt.template.md ]]; then
-  render_template template/files/preprompt.template.md "$ticket_dir/preprompt.md"
-else
-  cat > "$ticket_dir/preprompt.md" <<EOF
-# Ticket preprompt
-
-- **Task ID**: $ticket_id
-- **Task title**: $TITLE
-- **Created**: $timestamp
-
-Keep executable implementation outside this governance/evidence directory.
-Read a human-owned user-*.md file only when one exists.
-The request to execute this work creates SESSION_EXECUTION_AUTHORIZATION;
-proceed within the recorded intent without a redundant confirmation prompt.
-Require new authority for destructive action, secrets, external coordination,
-material objective expansion and trusted merge approval.
+This directory contains the minimal reviewed intent. Optional participant prose
+and raw command logs are not required delivery output.
 EOF
 fi
 
@@ -386,50 +431,6 @@ else
 }
 EOF
 fi
-
-if [[ -f template/files/agent-participant.template.md ]]; then
-  render_template template/files/agent-participant.template.md "$ticket_dir/$agent_file"
-else
-  cat > "$ticket_dir/$agent_file" <<EOF
----
-participant-id: agent:$AGENT
-participant: $AGENT
-role: agent
-ticket: $ticket_id
----
-# Participant: $AGENT (AI agent)
-
-## Understanding
-
-To be completed after reading human-owned input and the ticket preprompt.
-
-## Execution plan
-
-1. Validate the ticket scope and acceptance evidence before implementation.
-
-## Actual changes
-
-- Initialized the bounded ticket and recorded SESSION_EXECUTION_AUTHORIZATION
-  from the request to execute this work.
-
-## Blockers
-
-- None inside the recorded intent; proceed without a second confirmation.
-- New authority remains required for destructive action, secret access, new
-  external coordination, material objective expansion and trusted merge.
-EOF
-fi
-
-: > "$ticket_dir/$agent_log"
-
-cat > "$ticket_dir/changelog.md" <<EOF
-# Ticket Changelog ($ticket_id)
-
-## [0.1.0] - $date_only
-
-- Initial governance scaffold created.
-- No human participant identity or content was generated.
-EOF
 
 if [[ -n "$USERS" ]]; then
   echo "warning: --users=$USERS did not create user-* files; human-owned input must come from a human or trusted intake boundary" >&2
