@@ -16,6 +16,22 @@ semantic difference, including a missing required field. A consumer that needs
 a different shape must publish a separately versioned projection and a
 declared mapping; it must not reuse `wellmanifest.logs/event/v1`.
 
+An adopter validates its own stable error codes and runbooks separately:
+
+```bash
+python3 standard/logs_check.py error-adoption \
+  --root /path/to/wellmanifest/logs \
+  --catalog /path/to/consumer/logs-error-catalog.v1.json
+```
+
+The catalog is closed and contains `schema`, `namespace`,
+`contractSha256`, `errorsDirectory` and a sorted `diagnosticCodes` list. The
+namespace may not be `LOGS`; product codes remain HOME in their product
+repository. The directory cannot escape the catalog root or be a symlink, and
+its exact Markdown page set must match the declared codes. Digest drift,
+namespace substitution, missing or extra pages and malformed embedded error
+DSL all fail closed before publication.
+
 ## Event creation
 
 ```mermaid
@@ -74,9 +90,11 @@ but does not echo rejected payload values.
 ## Protobuf and projections
 
 Protobuf owns message names, field numbers, enums and service separation.
-`contracts/logs.contract.json` bundles the closed JSON projection schemas,
-request grammar, process URIs and diagnostic catalog. JSONL and embedded error
-DSL are projections of those types, not competing semantic definitions.
+The current versioned contract bundles the closed JSON projection schemas,
+request grammar, process URIs and standard diagnostic catalog. Historical
+contract paths remain byte-stable so evidence in an existing JSONL event never
+changes underneath its digest. JSONL and embedded error DSL are projections of
+those types, not competing semantic definitions.
 
 Buf lint verifies Protobuf syntax and style. The Python conformance runtime
 also checks that required messages, service methods, enum vocabulary and the
@@ -126,3 +144,17 @@ The safe recovery order is:
 
 Never disable hash checks, delete unknown history, redact by overwriting a
 published event or treat an LLM explanation as proof that a chain is valid.
+
+For automation, keep the transition explicit:
+
+```text
+ERROR (fact) -> Strategy candidates (target-owned proposals)
+             -> Policy filter (invariants + prohibitions)
+             -> authorized execution or safe terminal exit
+             -> verification -> receipt
+```
+
+A policy filter may return `retry-later`, `degraded`, `no-change` or
+`escalation-required`; those are valid exits, not governance failures. It must
+not reinterpret ERROR as success, prescribe one hardcoded recovery command or
+reserve work forever after independently verifiable terminal evidence exists.

@@ -1,0 +1,69 @@
+{
+  "schema": "new-project.intent/v3",
+  "ticket": "ticket-011",
+  "summary": "Validate adopter-owned error catalogs",
+  "workstream": "integration",
+  "classification": {
+    "kind": "FEATURE",
+    "priority": "P1",
+    "origin": "requested"
+  },
+  "allowedPaths": [
+    "project/ticket-011/**",
+    "project/TICKETS.md",
+    "standard/logs_check.py",
+    "contracts/logs.contract.v0.3.json",
+    "docs/ARCHITECTURE.md",
+    "docs/LOGIC_FLOW.md",
+    "VERSION",
+    "logs/control.jsonl"
+  ],
+  "forbiddenPaths": ["project/ticket-*/user-*.md"],
+  "stacks": ["docker"],
+  "dependsOn": [],
+  "conflictsWith": [],
+  "integrationTicket": null,
+  "delivery": {
+    "acceptedBaseSha": "fbe4e0b581d0baf49297c810bf798f1fbe8a6680",
+    "targetBranch": "main",
+    "outcome": "Validate adopter-owned stable error catalogs against the immutable Wellmanifest Logs contract without transferring runtime ownership or authority.",
+    "nonGoals": [
+      "No runtime log backend",
+      "No product-specific error codes in wellmanifest/logs",
+      "No remediation execution or authority grant",
+      "No rewrite of published event streams"
+    ],
+    "complexity": "L",
+    "estimatedMinutes": 30,
+    "budgets": {
+      "maxImplementationFiles": 15,
+      "maxAffectedComponents": 5,
+      "maxPublicInterfaceChanges": 2,
+      "maxRuntimeDependencies": 0
+    },
+    "architecture": {
+      "status": "accepted",
+      "decision": "Add a separate adopter-error-catalog manifest and read-only validation command. The manifest pins the canonical contract digest, owns one uppercase namespace, declares the exact code set and points to a confined Markdown directory. Strategies stay target-owned and policy defines invariants and forbidden outcomes rather than one recovery implementation.",
+      "components": [
+        {"name": "logs contract", "paths": ["contracts/logs.contract.v0.3.json", "VERSION", "logs/control.jsonl"]},
+        {"name": "conformance", "paths": ["standard/logs_check.py"]},
+        {"name": "adoption guidance", "paths": ["docs/ARCHITECTURE.md", "docs/LOGIC_FLOW.md"]}
+      ],
+      "responsibilityChanges": false,
+      "interfaceChanges": [
+        "New error-adoption conformance command and report",
+        "Additional closed operational error categories"
+      ],
+      "dataChanges": ["Append one immutable contract registration event for v0.3"],
+      "ui": {"impact": "none", "states": [], "evidence": []},
+      "rollback": "Revert the new command and v0.3 category additions; existing v0.2 event bytes and repository validation remain unchanged."
+    },
+    "runtimeDependencies": [],
+    "validation": [
+      {"criterion": "AC-02", "commands": ["python3 standard/logs_check.py self-test"], "evidence": "valid adopter catalog passes"},
+      {"criterion": "AC-03", "commands": ["python3 standard/logs_check.py self-test"], "evidence": "adversarial adopter catalogs fail closed"},
+      {"criterion": "AC-05", "commands": ["python3 standard/logs_check.py validate --root .", "docker compose run --rm conformance", "docker compose run --rm -v /root/.cache proto", "./project/governance-check.sh --actor agent"], "evidence": "all deterministic gates pass"},
+      {"criterion": "AC-06", "commands": ["git merge-base --is-ancestor fbe4e0b581d0baf49297c810bf798f1fbe8a6680 HEAD", "python3 .governance/ticket_activity.py --root . resolve --ticket-dir project/ticket-012 --active-status IN_PROGRESS"], "evidence": "the merged governance base is in branch history and its verified receipt resolves inactive"}
+    ]
+  }
+}

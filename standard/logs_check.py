@@ -17,12 +17,16 @@ from pathlib import Path
 from typing import Any
 
 
-CONTRACT_PATH = Path("contracts/logs.contract.json")
+CONTRACT_PATH = Path("contracts/logs.contract.v0.3.json")
+LEGACY_CONTRACT_PATHS = (Path("contracts/logs.contract.json"),)
 HELP_PATH = "errors/LOGS-VALIDATION-001.md"
 DIAGNOSTIC_CODE = "LOGS-VALIDATION-001"
 ZERO_HASH = "0" * 64
 MAX_ADOPTED_SCHEMA_BYTES = 1024 * 1024
+MAX_ADOPTED_CATALOG_BYTES = 64 * 1024
+MAX_ERROR_DOCUMENT_BYTES = 256 * 1024
 CODE_RE = re.compile(r"^[A-Z][A-Z0-9]*(?:-[A-Z0-9]+)+$")
+NAMESPACE_RE = re.compile(r"^[A-Z][A-Z0-9]{1,31}$")
 STREAM_RE = re.compile(r"^[a-z][a-z0-9._-]{0,63}$")
 ID_RE = re.compile(r"^[A-Za-z0-9._:-]{1,128}$")
 EVENT_ID_RE = re.compile(r"^event:[A-Za-z0-9._:-]{2,122}$")
@@ -215,6 +219,106 @@ def validate_adopted_event_schema(root: Path, candidate_path: Path) -> dict[str,
     }
 
 
+def validate_adopted_error_catalog(root: Path, catalog_path: Path) -> dict[str, Any]:
+    """Validate one adopter-owned, contract-pinned error catalog and runbook set."""
+    findings: list[Finding] = []
+    contract_sha = ""
+    catalog_sha = ""
+    errors_checked = 0
+    try:
+        bundle, contract_sha = load_contract(root)
+        try:
+            size = catalog_path.stat().st_size
+        except OSError as error:
+            raise ContractFailure(
+                "LOGS-ADOPTION-ERROR-CATALOG-READ",
+                catalog_path.as_posix(),
+                "adopter error catalog is unavailable",
+            ) from error
+        if catalog_path.is_symlink() or size < 2 or size > MAX_ADOPTED_CATALOG_BYTES:
+            raise ContractFailure(
+                "LOGS-ADOPTION-ERROR-CATALOG-SIZE",
+                catalog_path.as_posix(),
+                "adopter error catalog is not a bounded regular file",
+            )
+        catalog_sha = sha256_file(catalog_path)
+        catalog = exact_fields(
+            read_json(
+                catalog_path,
+                rule="LOGS-ADOPTION-ERROR-CATALOG-JSON",
+                label="adopter error catalog",
+            ),
+            {"schema", "namespace", "contractSha256", "errorsDirectory", "diagnosticCodes"},
+            rule="LOGS-ADOPTION-ERROR-CATALOG-FIELDS",
+            path=catalog_path.as_posix(),
+        )
+        if catalog.get("schema") != "wellmanifest.logs/adopter-error-catalog/v1":
+            raise ContractFailure(
+                "LOGS-ADOPTION-ERROR-CATALOG-SCHEMA",
+                catalog_path.as_posix(),
+                "adopter error catalog schema is unsupported",
+            )
+        namespace = catalog.get("namespace")
+        reserved_namespaces = bundle["vocabulary"]["reservedErrorNamespaces"]
+        if (
+            not isinstance(namespace, str)
+            or NAMESPACE_RE.fullmatch(namespace) is None
+            or namespace in reserved_namespaces
+        ):
+            raise ContractFailure(
+                "LOGS-ADOPTION-ERROR-NAMESPACE",
+                catalog_path.as_posix(),
+                "adopter namespace is invalid or reserved by wellmanifest/logs",
+            )
+        if catalog.get("contractSha256") != contract_sha:
+            raise ContractFailure(
+                "LOGS-ADOPTION-ERROR-CONTRACT-DRIFT",
+                catalog_path.as_posix(),
+                "adopter catalog is not pinned to the canonical contract digest",
+            )
+        errors_directory = catalog.get("errorsDirectory")
+        if not isinstance(errors_directory, str) or PATH_RE.fullmatch(errors_directory) is None:
+            raise ContractFailure(
+                "LOGS-ADOPTION-ERROR-PATH",
+                catalog_path.as_posix(),
+                "adopter errors directory violates repository confinement",
+            )
+        codes = require_string_list(
+            catalog.get("diagnosticCodes"),
+            minimum=1,
+            maximum=256,
+            unique=True,
+            rule="LOGS-ADOPTION-ERROR-CODES",
+            path=catalog_path.as_posix(),
+        )
+        if codes != sorted(codes) or any(
+            CODE_RE.fullmatch(code) is None or not code.startswith(f"{namespace}-")
+            for code in codes
+        ):
+            raise ContractFailure(
+                "LOGS-ADOPTION-ERROR-NAMESPACE",
+                catalog_path.as_posix(),
+                "diagnostic codes must be sorted stable codes owned by the declared namespace",
+            )
+        documents = load_error_documents(
+            catalog_path.parent,
+            bundle,
+            directory_relative=errors_directory,
+            declared=set(codes),
+        )
+        errors_checked = len(documents)
+    except ContractFailure as error:
+        findings.append(finding(error))
+    return {
+        "schema": "wellmanifest.logs/error-adoption-report/v1",
+        "valid": not findings,
+        "contractSha256": contract_sha,
+        "candidateCatalogSha256": catalog_sha,
+        "errorDefinitionsChecked": errors_checked,
+        "findings": [asdict(item) for item in findings],
+    }
+
+
 def _assert_closed_objects(value: Any, path: str = "schemas") -> None:
     if isinstance(value, dict):
         if value.get("type") == "object" and value.get("additionalProperties") is not False:
@@ -254,7 +358,7 @@ def load_contract(root: Path) -> tuple[dict[str, Any], str]:
     constants = {
         "$schema": "https://json-schema.org/draft/2020-12/schema",
         "schema": "wellmanifest.logs/contract-bundle/v1",
-        "version": "0.2.0",
+        "version": "0.3.0",
         "canonical": "protobuf",
         "protobufPath": "proto/wellmanifest/logs/v1/logs.proto",
         "projection": "canonical-jsonl",
@@ -286,7 +390,14 @@ def load_contract(root: Path) -> tuple[dict[str, Any], str]:
     )
     vocabulary = exact_fields(
         bundle.get("vocabulary"),
-        {"severities", "eventTypes", "outcomes", "errorCategories", "modes"},
+        {
+            "severities",
+            "eventTypes",
+            "outcomes",
+            "errorCategories",
+            "reservedErrorNamespaces",
+            "modes",
+        },
         rule="LOGS-CONTRACT-VOCABULARY",
         path=CONTRACT_PATH.as_posix(),
     )
@@ -298,6 +409,15 @@ def load_contract(root: Path) -> tuple[dict[str, Any], str]:
                 CONTRACT_PATH.as_posix(),
                 "contract vocabulary must contain nonempty unique arrays",
             )
+    if vocabulary["errorCategories"] != sorted(vocabulary["errorCategories"]) or any(
+        NAMESPACE_RE.fullmatch(item) is None
+        for item in vocabulary["reservedErrorNamespaces"]
+    ):
+        raise ContractFailure(
+            "LOGS-CONTRACT-VOCABULARY",
+            CONTRACT_PATH.as_posix(),
+            "unordered categories or invalid reserved error namespaces",
+        )
     event_properties = schemas["event"].get("properties", {})
     if event_properties.get("severity", {}).get("enum") != vocabulary["severities"]:
         raise ContractFailure(
@@ -330,6 +450,13 @@ def load_contract(root: Path) -> tuple[dict[str, Any], str]:
             "LOGS-CONTRACT-VOCABULARY",
             CONTRACT_PATH.as_posix(),
             "event outcome schema differs from vocabulary",
+        )
+    error_properties = schemas["error"].get("properties", {})
+    if error_properties.get("category", {}).get("enum") != vocabulary["errorCategories"]:
+        raise ContractFailure(
+            "LOGS-CONTRACT-VOCABULARY",
+            CONTRACT_PATH.as_posix(),
+            "error category schema differs from vocabulary",
         )
     _assert_closed_objects(schemas)
     if bundle.get("requestGbnf") != EXPECTED_REQUEST_GBNF:
@@ -452,7 +579,8 @@ def validate_error_definition(
     version = definition.get("version")
     if isinstance(version, bool) or not isinstance(version, int) or not 1 <= version <= 2147483647:
         raise ContractFailure("LOGS-DOC-VERSION", path, "error DSL version is invalid")
-    if definition.get("severity") not in {"WARNING", "ERROR", "CRITICAL"}:
+    allowed_severities = bundle["schemas"]["error"]["properties"]["severity"]["enum"]
+    if definition.get("severity") not in allowed_severities:
         raise ContractFailure("LOGS-DOC-SEVERITY", path, "error severity is invalid")
     if definition.get("category") not in vocabulary["errorCategories"]:
         raise ContractFailure("LOGS-DOC-CATEGORY", path, "error category is invalid")
@@ -493,10 +621,30 @@ def validate_error_definition(
     return definition
 
 
-def load_error_catalog(root: Path, bundle: dict[str, Any]) -> dict[str, dict[str, Any]]:
-    directory = root / "errors"
-    if not directory.is_dir():
-        raise ContractFailure("LOGS-DOC-DIRECTORY", "errors", "error directory is missing")
+def load_error_documents(
+    root: Path,
+    bundle: dict[str, Any],
+    *,
+    directory_relative: str,
+    declared: set[str],
+) -> dict[str, dict[str, Any]]:
+    resolved_root = root.resolve()
+    unresolved_directory = resolved_root / directory_relative
+    directory = unresolved_directory.resolve()
+    try:
+        directory.relative_to(resolved_root)
+    except ValueError as error:
+        raise ContractFailure(
+            "LOGS-DOC-DIRECTORY",
+            directory_relative,
+            "error directory escapes its catalog root",
+        ) from error
+    if unresolved_directory.is_symlink() or not directory.is_dir():
+        raise ContractFailure(
+            "LOGS-DOC-DIRECTORY",
+            directory_relative,
+            "error directory is missing or symbolic",
+        )
     documents: dict[str, dict[str, Any]] = {}
     unexpected = sorted(
         item.name for item in directory.iterdir() if not item.is_file() or item.suffix != ".md"
@@ -504,16 +652,18 @@ def load_error_catalog(root: Path, bundle: dict[str, Any]) -> dict[str, dict[str
     if unexpected:
         raise ContractFailure(
             "LOGS-DOC-PATH",
-            "errors",
+            directory_relative,
             "error directory contains an unsupported entry",
         )
     fence_pattern = re.compile(r"```log-error-dsl\n([^\n]+)\n```", re.MULTILINE)
     for file_path in sorted(directory.glob("*.md")):
         code = file_path.stem
-        relative = file_path.relative_to(root).as_posix()
+        relative = file_path.relative_to(resolved_root).as_posix()
         if CODE_RE.fullmatch(code) is None:
             raise ContractFailure("LOGS-DOC-PATH", relative, "error filename is not a stable code")
         try:
+            if file_path.is_symlink() or file_path.stat().st_size > MAX_ERROR_DOCUMENT_BYTES:
+                raise OSError("error page is symbolic or exceeds the bounded size")
             text = file_path.read_text("utf-8")
         except (OSError, UnicodeError) as error:
             raise ContractFailure("LOGS-DOC-READ", relative, "error page is unreadable") from error
@@ -559,14 +709,22 @@ def load_error_catalog(root: Path, bundle: dict[str, Any]) -> dict[str, dict[str
                 relative,
                 "error heading does not match its filename and embedded DSL title",
             )
-    declared = set(bundle["diagnosticCodes"])
     if set(documents) != declared:
         raise ContractFailure(
             "LOGS-DOC-CATALOG",
-            "errors",
+            directory_relative,
             "error page set differs from the diagnostic catalog",
         )
     return documents
+
+
+def load_error_catalog(root: Path, bundle: dict[str, Any]) -> dict[str, dict[str, Any]]:
+    return load_error_documents(
+        root,
+        bundle,
+        directory_relative="errors",
+        declared=set(bundle["diagnosticCodes"]),
+    )
 
 
 def require_datetime(value: Any, path: str) -> None:
@@ -912,6 +1070,7 @@ def validate_request(bundle: dict[str, Any], value: Any) -> dict[str, Any]:
 
 def copy_fixture(source: Path, destination: Path) -> None:
     for relative in (
+        *LEGACY_CONTRACT_PATHS,
         CONTRACT_PATH,
         Path("proto/wellmanifest/logs/v1/logs.proto"),
         Path(HELP_PATH),
@@ -944,6 +1103,68 @@ def assert_invalid(root: Path, rule: str) -> None:
     rules = {item["rule"] for item in result["findings"]}
     if result["valid"] or rule not in rules:
         raise AssertionError(f"expected {rule}, observed {sorted(rules)}")
+
+
+def write_adopter_error_fixture(
+    root: Path,
+    contract_sha: str,
+    *,
+    codes: tuple[str, ...] = ("ONEDEV-TEST-001",),
+) -> Path:
+    errors = root / "errors"
+    errors.mkdir(parents=True)
+    for code in codes:
+        title = "Concurrent coordinator cycle was safely rejected"
+        definition = {
+            "category": "CONCURRENCY",
+            "causes": ["Another coordinator still owns the process lease"],
+            "code": code,
+            "doNot": ["Do not delete a live lease file or replay the status write"],
+            "meaning": "The requested cycle did not run because another process owns the serialized coordinator boundary.",
+            "owner": "service:onedev-agent",
+            "relatedEventTypes": ["error_raised", "remediation_completed"],
+            "remediation": ["Let the owning cycle finish or verify that its process terminated"],
+            "schema": "wellmanifest.logs/error/v1",
+            "severity": "WARNING",
+            "title": title,
+            "verification": ["Run the coordinator concurrency regression test"],
+            "version": 1,
+        }
+        (errors / f"{code}.md").write_text(
+            f"# {code}: {title}\n\n"
+            "## Error DSL\n\n"
+            f"```log-error-dsl\n{canonical(definition)}\n```\n\n"
+            "## Situation\n\nA second coordinator attempted an overlapping cycle.\n\n"
+            "## Meaning\n\nThe active owner retains exclusive status and queue authority.\n\n"
+            "## Safe resolution\n\nWait for the owner or verify process termination before retrying.\n\n"
+            "## Verification\n\nRun the deterministic concurrency regression.\n\n"
+            "## Do not\n\nDo not remove a lease held by a live process.\n\n"
+            "## Related events\n\nUse error_raised and remediation_completed.\n",
+            encoding="utf-8",
+        )
+    catalog = root / "logs-error-catalog.v1.json"
+    catalog.write_text(
+        json.dumps(
+            {
+                "schema": "wellmanifest.logs/adopter-error-catalog/v1",
+                "namespace": "ONEDEV",
+                "contractSha256": contract_sha,
+                "errorsDirectory": "errors",
+                "diagnosticCodes": sorted(codes),
+            },
+            indent=2,
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+    return catalog
+
+
+def assert_error_adoption_invalid(source: Path, catalog: Path, rule: str) -> None:
+    result = validate_adopted_error_catalog(source, catalog)
+    rules = {item["rule"] for item in result["findings"]}
+    if result["valid"] or rule not in rules:
+        raise AssertionError(f"expected adopter rule {rule}, observed {sorted(rules)}")
 
 
 def run_self_test(source: Path) -> None:
@@ -1128,7 +1349,72 @@ def run_self_test(source: Path) -> None:
             != "LOGS-ADOPTION-SCHEMA-DRIFT"
         ):
             raise AssertionError("stale adopted schema was accepted")
-    print("logs conformance self-test: PASS (19 adversarial checks)")
+
+        adopter = Path(temporary) / "adopter"
+        adopter_catalog = write_adopter_error_fixture(adopter, load_contract(source)[1])
+        adopted = validate_adopted_error_catalog(source, adopter_catalog)
+        if not adopted["valid"] or adopted["errorDefinitionsChecked"] != 1:
+            raise AssertionError(f"valid adopter error catalog was rejected: {adopted['findings']}")
+
+        drift = Path(temporary) / "adopter-drift"
+        shutil.copytree(adopter, drift)
+        drift_catalog = drift / adopter_catalog.name
+        drift_payload = read_json(drift_catalog, rule="SELF-TEST", label="adopter catalog")
+        drift_payload["contractSha256"] = "0" * 64
+        drift_catalog.write_text(json.dumps(drift_payload, indent=2) + "\n", encoding="utf-8")
+        assert_error_adoption_invalid(source, drift_catalog, "LOGS-ADOPTION-ERROR-CONTRACT-DRIFT")
+
+        substituted = Path(temporary) / "adopter-substituted"
+        shutil.copytree(adopter, substituted)
+        substituted_catalog = substituted / adopter_catalog.name
+        substituted_payload = read_json(
+            substituted_catalog,
+            rule="SELF-TEST",
+            label="adopter catalog",
+        )
+        substituted_payload["namespace"] = "SUBLLM"
+        substituted_catalog.write_text(
+            json.dumps(substituted_payload, indent=2) + "\n",
+            encoding="utf-8",
+        )
+        assert_error_adoption_invalid(
+            source,
+            substituted_catalog,
+            "LOGS-ADOPTION-ERROR-NAMESPACE",
+        )
+
+        reserved = Path(temporary) / "adopter-reserved"
+        shutil.copytree(adopter, reserved)
+        reserved_catalog = reserved / adopter_catalog.name
+        reserved_payload = read_json(reserved_catalog, rule="SELF-TEST", label="adopter catalog")
+        reserved_payload["namespace"] = "LOGS"
+        reserved_catalog.write_text(json.dumps(reserved_payload, indent=2) + "\n", encoding="utf-8")
+        assert_error_adoption_invalid(
+            source,
+            reserved_catalog,
+            "LOGS-ADOPTION-ERROR-NAMESPACE",
+        )
+
+        missing = Path(temporary) / "adopter-missing"
+        shutil.copytree(adopter, missing)
+        (missing / "errors/ONEDEV-TEST-001.md").unlink()
+        assert_error_adoption_invalid(
+            source,
+            missing / adopter_catalog.name,
+            "LOGS-DOC-CATALOG",
+        )
+
+        extra = Path(temporary) / "adopter-extra"
+        extra_catalog = write_adopter_error_fixture(
+            extra,
+            load_contract(source)[1],
+            codes=("ONEDEV-EXTRA-001", "ONEDEV-TEST-001"),
+        )
+        extra_payload = read_json(extra_catalog, rule="SELF-TEST", label="adopter catalog")
+        extra_payload["diagnosticCodes"] = ["ONEDEV-TEST-001"]
+        extra_catalog.write_text(json.dumps(extra_payload, indent=2) + "\n", encoding="utf-8")
+        assert_error_adoption_invalid(source, extra_catalog, "LOGS-DOC-CATALOG")
+    print("logs conformance self-test: PASS (24 adversarial checks)")
 
 
 def print_report(result: dict[str, Any], output_format: str) -> None:
@@ -1166,6 +1452,12 @@ def build_parser() -> argparse.ArgumentParser:
     adoption.add_argument("--root", type=Path, default=Path("."))
     adoption.add_argument("--event-schema", type=Path, required=True)
     adoption.add_argument("--format", choices=("text", "json"), default="text")
+    error_adoption = subparsers.add_parser(
+        "error-adoption", help="validate a consumer-owned error catalog and runbooks"
+    )
+    error_adoption.add_argument("--root", type=Path, default=Path("."))
+    error_adoption.add_argument("--catalog", type=Path, required=True)
+    error_adoption.add_argument("--format", choices=("text", "json"), default="text")
     subparsers.add_parser("self-test", help="run positive and adversarial conformance")
     return parser
 
@@ -1189,6 +1481,24 @@ def main(argv: list[str] | None = None) -> int:
             print(
                 "LOGS-ADOPTION-PASS: event schema matches canonical contract "
                 f"{result['contractSha256']}"
+            )
+        else:
+            for item in result["findings"]:
+                print(
+                    f"{item['code']} {item['severity']} [{item['rule']}] "
+                    f"{item['path']}: {item['message']} "
+                    f"(help: {item['helpPath']})"
+                )
+        return 0 if result["valid"] else 1
+    if args.command == "error-adoption":
+        result = validate_adopted_error_catalog(root, args.catalog.resolve())
+        if args.format == "json":
+            print(json.dumps(result, indent=2, sort_keys=True))
+        elif result["valid"]:
+            print(
+                "LOGS-ERROR-ADOPTION-PASS: "
+                f"{result['errorDefinitionsChecked']} error definition(s) match "
+                f"canonical contract {result['contractSha256']}"
             )
         else:
             for item in result["findings"]:

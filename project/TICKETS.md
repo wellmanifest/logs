@@ -10,5 +10,6 @@
 | **ticket-006** | [`README.md`](./ticket-006/README.md) | [`preprompt.md`](./ticket-006/preprompt.md) | - |  [`ai-codex.md`](./ticket-006/ai-codex.md) |  [`ai-codex-logs.txt`](./ticket-006/ai-codex-logs.txt) | [`changelog.md`](./ticket-006/changelog.md) |
 | **ticket-007** | [`README.md`](./ticket-007/README.md) | [`preprompt.md`](./ticket-007/preprompt.md) | - |  [`ai-codex.md`](./ticket-007/ai-codex.md) |  [`ai-codex-logs.txt`](./ticket-007/ai-codex-logs.txt) | [`changelog.md`](./ticket-007/changelog.md) |
 | **ticket-009** | [`README.md`](./ticket-009/README.md) | [`preprompt.md`](./ticket-009/preprompt.md) | - |  [`ai-codex.md`](./ticket-009/ai-codex.md) |  [`ai-codex-logs.txt`](./ticket-009/ai-codex-logs.txt) | [`changelog.md`](./ticket-009/changelog.md) |
+| **ticket-011** | [`README.md`](./ticket-011/README.md) | [`preprompt.md`](./ticket-011/preprompt.md) | - |  [`ai-codex.md`](./ticket-011/ai-codex.md) |  [`ai-codex-logs.txt`](./ticket-011/ai-codex-logs.txt) | [`changelog.md`](./ticket-011/changelog.md) |
 | **ticket-012** | [`README.md`](./ticket-012/README.md) | [`preprompt.md`](./ticket-012/preprompt.md) | - |  [`ai-codex.md`](./ticket-012/ai-codex.md) |  [`ai-codex-logs.txt`](./ticket-012/ai-codex-logs.txt) | [`changelog.md`](./ticket-012/changelog.md) |
 <!-- AUTO:TICKET_INDEX:END -->
