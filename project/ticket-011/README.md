@@ -13,11 +13,9 @@ Let Subactor runtime repositories ADOPT the canonical
 codes and runbooks. Add a read-only command that validates one closed adopter
 catalog, its immutable standard digest, namespace and exact Markdown page set.
 
-Before extending that contract, adopt immutable `wellmanifest/new-project`
-0.19.11. Its dynamic activity registry makes the integrated tickets 007 and
-009 non-blocking from verified, clone-external merge receipts without rewriting
-their historical `IN_PROGRESS` prose. Invalid, missing or stale evidence remains
-active and has a managed recovery runbook.
+The prerequisite `wellmanifest/new-project` 0.19.11 adoption was delivered
+separately by ticket 012 and merged as PR 17. This ticket consumes that merged
+base; it does not own governance policy or its managed files.
 
 This standard owns the reusable shape and conformance rules. It does not own
 `ONEDEV-*`, `SUBLLM-*`, `CONFIG-*` or other runtime diagnoses, and it grants no
@@ -36,8 +34,8 @@ authority to execute a remediation.
       concurrency, dependency, resource and runtime failures without an
       arbitrary category string.
 - [ ] AC-05: host, Docker, Buf and governance gates pass.
-- [ ] AC-06: the adoption lock pins published `new-project` 0.19.11 and
-      verified receipts release only the integrated ticket reservations.
+- [ ] AC-06: the merged ticket-012 base is present and its verified terminal
+      receipt releases the completed governance reservation.
 
 ## Tracking boundary
 

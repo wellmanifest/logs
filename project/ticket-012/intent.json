@@ -1,0 +1,70 @@
+{
+  "schema": "new-project.intent/v3",
+  "ticket": "ticket-012",
+  "summary": "Adopt recoverable ticket activity policy",
+  "workstream": "governance",
+  "classification": {
+    "kind": "SERVICE",
+    "priority": "P1",
+    "origin": "requested"
+  },
+  "allowedPaths": [
+    "project/ticket-012/**",
+    "project/TICKETS.md",
+    "project/new-ticket.sh",
+    ".governance/**"
+  ],
+  "forbiddenPaths": ["project/ticket-*/user-*.md"],
+  "stacks": [],
+  "dependsOn": [],
+  "conflictsWith": [],
+  "integrationTicket": null,
+  "placement": {
+    "home": "wellmanifest",
+    "shape": "domain_pack",
+    "runtimeOwner": "wellmanifest",
+    "adopt": ["wellmanifest/new-project", "wellmanifest/logs"]
+  },
+  "delivery": {
+    "acceptedBaseSha": "b19d12b69ed092ab98ee8a57442f4b2de43f6482",
+    "targetBranch": "main",
+    "outcome": "Logs adopts the published recovery-oriented ticket activity policy and verifies terminal receipts without rewriting history",
+    "nonGoals": [
+      "Do not close or delete unmerged PR 16",
+      "Do not rewrite historical ticket status prose",
+      "Do not trust repository-authored prose as merge authority"
+    ],
+    "complexity": "S",
+    "estimatedMinutes": 25,
+    "standardAdoption": {
+      "sourceRepository": "wellmanifest/new-project",
+      "fromRevision": "edce26953b46d3ba4096b1942bdf86bcce4edaf0",
+      "toRevision": "76667407e86d21744411e05d1257e922715b8751"
+    },
+    "budgets": {
+      "maxImplementationFiles": 5,
+      "maxAffectedComponents": 2,
+      "maxPublicInterfaceChanges": 1,
+      "maxRuntimeDependencies": 0
+    },
+    "architecture": {
+      "status": "accepted",
+      "decision": "Adopt one immutable managed package; resolve activity from policy plus externally stored receipts verified against repository identity and Git ancestry",
+      "components": [
+        {"name": "target-governance", "paths": [".governance/**", "project/new-ticket.sh"]}
+      ],
+      "responsibilityChanges": false,
+      "interfaceChanges": ["wellmanifest/new-project adoption 0.19.10 -> 0.19.11"],
+      "dataChanges": [],
+      "ui": {"impact": "none", "states": [], "evidence": []},
+      "rollback": "Re-adopt the previous immutable revision through the same managed transaction; preserve external receipts for audit"
+    },
+    "runtimeDependencies": [],
+    "validation": [
+      {"criterion": "AC-02", "commands": ["goal governance adopt --source-revision 76667407e86d21744411e05d1257e922715b8751 --target-root . --check"], "evidence": "No managed drift"},
+      {"criterion": "AC-03", "commands": ["python3 .governance/ticket_activity.py --root . resolve --ticket-dir project/ticket-007 --active-status IN_PROGRESS", "python3 .governance/ticket_activity.py --root . resolve --ticket-dir project/ticket-009 --active-status IN_PROGRESS"], "evidence": "Both resolve inactive from verified receipts"},
+      {"criterion": "AC-04", "commands": ["python3 .governance/ticket_activity.py --root . validate"], "evidence": "Registry and policy validate; negative scenarios are covered by upstream tests"},
+      {"criterion": "AC-05", "commands": ["./project/governance-check.sh --actor agent"], "evidence": "GOV-PASS"}
+    ]
+  }
+}
