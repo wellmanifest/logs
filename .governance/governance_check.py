@@ -18,6 +18,25 @@ from dataclasses import asdict, dataclass, field
 from pathlib import Path
 from typing import Any
 
+_previous_bytecode_policy = sys.dont_write_bytecode
+sys.dont_write_bytecode = True
+try:
+    try:
+        from ticket_activity import ActivityError, resolve as resolve_ticket_activity
+    except ModuleNotFoundError:
+        _activity_spec = importlib.util.spec_from_file_location(
+            "ticket_activity", Path(__file__).with_name("ticket_activity.py")
+        )
+        if _activity_spec is None or _activity_spec.loader is None:
+            raise
+        _activity_module = importlib.util.module_from_spec(_activity_spec)
+        sys.modules[_activity_spec.name] = _activity_module
+        _activity_spec.loader.exec_module(_activity_module)
+        ActivityError = _activity_module.ActivityError
+        resolve_ticket_activity = _activity_module.resolve
+finally:
+    sys.dont_write_bytecode = _previous_bytecode_policy
+
 RUNTIME_VERSION = "0.11.0"
 POLICY_DSL_LOCK = {
     "schema": "new-project.policy-dsl-lock/v1",
@@ -37,6 +56,7 @@ POLICY_DSL_LOCK = {
     },
 }
 ACTIVE_DEFAULT = {"IN_PROGRESS"}
+TICKET_ACTIVITY_ERROR = "GOV-TICKET-ACTIVITY-001"
 EXECUTABLE_SUFFIXES = {
     ".bat", ".c", ".cc", ".cmd", ".cpp", ".go", ".java", ".js", ".jsx",
     ".mjs", ".php", ".ps1", ".py", ".rb", ".rs", ".sh", ".ts", ".tsx",
@@ -1416,6 +1436,40 @@ def load_ticket_records(directories: list[Path], config: dict[str, Any]) -> list
     return records
 
 
+def active_ticket_records(
+    root: Path,
+    config: dict[str, Any],
+    records: list[TicketRecord],
+    report: Report | None = None,
+) -> list[TicketRecord]:
+    """Return live reservations from the shared status/receipt resolver."""
+    active_statuses = set(config.get("activeStatuses", ACTIVE_DEFAULT))
+    active: list[TicketRecord] = []
+    for record in records:
+        if record.status not in active_statuses:
+            continue
+        try:
+            resolution = resolve_ticket_activity(root, record.directory, active_statuses)
+        except ActivityError as error:
+            # A broken optional cache must never fabricate terminal authority.
+            # Keep the projection active and expose one stable, recoverable error.
+            active.append(record)
+            if report is not None and not any(
+                finding.code == TICKET_ACTIVITY_ERROR for finding in report.findings
+            ):
+                report.add(
+                    TICKET_ACTIVITY_ERROR,
+                    f"Ticket activity could not be resolved safely: {error}",
+                    "Reconcile or quarantine the clone-external registry from protected evidence; follow error/GOV-TICKET-ACTIVITY.md.",
+                    [rel(root, record.directory / "README.md")],
+                    {"ticket": record.directory.name, "fallback": "remain-active"},
+                )
+            continue
+        if resolution.active:
+            active.append(record)
+    return active
+
+
 def repository_files(root: Path, changed: list[str]) -> list[str]:
     try:
         raw = git_output(root, ["ls-files", "-co", "--exclude-standard", "-z"])
@@ -1821,7 +1875,7 @@ def check_coordination(
         return
     config = manifest["ticket"]
     check_ticket_statuses(root, config, records, report)
-    active = [record for record in records if record.status in set(config.get("activeStatuses", ACTIVE_DEFAULT))]
+    active = active_ticket_records(root, config, records, report)
     if not changed:
         # Ticket records merged into the clean default-branch snapshot are
         # authorization history, not evidence of concurrent live writers. A
@@ -3438,7 +3492,7 @@ def check_change_gate(
 ) -> str | None:
     governance_patterns = manifest["governancePaths"]
     config = manifest["ticket"]
-    active = [record for record in records if record.status in set(config.get("activeStatuses", ACTIVE_DEFAULT))]
+    active = active_ticket_records(root, config, records, report)
     changed_active = [
         record for record in active
         if any(path.startswith(f"{rel(root, record.directory).rstrip('/')}/") for path in changed)
@@ -3613,13 +3667,13 @@ def resolve_changed_paths(
 
 def resolve_validation_base(
     supplied_base: str | None,
+    root: Path,
     records: list[TicketRecord],
     config: dict[str, Any],
 ) -> str | None:
     if supplied_base is not None:
         return supplied_base
-    active_statuses = set(config.get("activeStatuses", ACTIVE_DEFAULT))
-    active = [record for record in records if record.status in active_statuses]
+    active = active_ticket_records(root, config, records)
     adoption_records = standard_adoption_records(active)
     if len(adoption_records) != 1:
         return None
@@ -3671,10 +3725,9 @@ def run_governance_checks(
     profiles_path = optional_repo_path(root, args.stack_profiles, "GOV-MANIFEST-001", "stack-profile", report)
     directories = ticket_directories(root, manifest["ticket"])
     records = load_ticket_records(directories, manifest["ticket"])
-    base = resolve_validation_base(args.base, records, manifest["ticket"])
+    base = resolve_validation_base(args.base, root, records, manifest["ticket"])
     changed = resolve_changed_paths(args, root, base, report)
-    active_statuses = set(manifest["ticket"].get("activeStatuses", ACTIVE_DEFAULT))
-    active = [record for record in records if record.status in active_statuses]
+    active = active_ticket_records(root, manifest["ticket"], records, report)
     changed_active = [
         record for record in active
         if any(path.startswith(f"{rel(root, record.directory).rstrip('/')}/") for path in changed)

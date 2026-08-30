@@ -182,10 +182,29 @@ if ! printf '%s\n' "$WORKSTREAM_REGISTRY" | grep -Fxq -- "$WORKSTREAM"; then
 fi
 
 is_active_ticket() {
-  local readme="$1/README.md" status
-  [[ -f "$readme" ]] || return 1
-  status="$(sed -nE 's/^-[[:space:]]+\*\*Status\*\*:[[:space:]]*([^[:space:]]+).*/\1/p' "$readme" | head -n 1)"
-  [[ -n "$status" ]] && printf '%s\n' "$ACTIVE_STATUSES" | grep -Fxq -- "$status"
+  local directory="$1" resolver status arguments=()
+  [[ -f "$directory/README.md" ]] || return 1
+  for resolver in .governance/ticket_activity.py scripts/ticket_activity.py; do
+    [[ -f "$resolver" ]] && break
+  done
+  if [[ ! -f "$resolver" ]]; then
+    echo "GOV-TICKET-ACTIVITY-001: managed ticket activity resolver is missing." >&2
+    echo "  remediation: restore the complete pinned governance package before allocating." >&2
+    exit 1
+  fi
+  while IFS= read -r status; do
+    arguments+=(--active-status "$status")
+  done <<< "$ACTIVE_STATUSES"
+  if python3 "$resolver" --root . resolve --ticket-dir "$directory" "${arguments[@]}" >/dev/null; then
+    status=0
+  else
+    status=$?
+  fi
+  case "$status" in
+    0) return 0 ;;
+    1) return 1 ;;
+    *) exit 1 ;;
+  esac
 }
 
 # The dimension vocabularies live in the work classification contract, which is
