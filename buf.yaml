@@ -1,6 +1,6 @@
 version: v2
 modules:
-  - path: proto/current
+  - path: proto/v0.5
 lint:
   use:
     - STANDARD

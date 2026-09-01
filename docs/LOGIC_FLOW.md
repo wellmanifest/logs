@@ -78,6 +78,7 @@ check closed schemas, request grammar and catalog
                         +--> event type: reserved core or namespaced deployment
                         +--> mode, source, subjectState, inputHash, receiptRef
                         +--> optional closed operational diagnostic
+                        +--> typed continuity payload + causal digest match
                         +--> event code resolves to error catalog
               |
               v
@@ -94,6 +95,55 @@ duration, a secret-free endpoint origin/reference, transport or HTTP status,
 runbook/error/knowledge references and optional W3C-sized trace identifiers.
 Unknown fields, credential-bearing URLs, path/query-bearing URLs and inverted
 attempt counters fail as `LOGS-EVENT-DIAGNOSTIC`.
+
+## Crash recovery and Git streaming
+
+```text
+agent.session_started
+        |
+        v
+agent.intent_compiled -------> agent.tool_requested
+                                      |
+                                      v
+                              agent.tool_completed
+                                      |
+                                      v
+                            agent.snapshot_recorded
+                                      |
+                                      v
+                             agent.resume_observed
+                                      |
+                                      v
+                              agent.resume_decided
+                                      |
+                                      v
+work.split_requested -------> work.split_materialized
+                                      |
+                                      v
+git.slice_checkpointed -----> git.commit_created
+                                      |
+                                      v
+                               git.push_started
+                                      |
+                                      v
+                              git.push_completed
+```
+
+Every arrow is an event-ID causation reference within one correlation. The
+checker resolves it only against earlier events in the same stream, verifies
+the expected parent type for paired transitions and compares the relevant
+digest. NL input becomes durable only as `sourceDigest` plus the compiled
+`intentDigest`. A restart first emits `resume_observed` and only then
+`resume_decided`; the decision is resume when state digests match and divergence
+when they do not. It never infers success from a raw transcript.
+
+`logs/continuity.jsonl` is the canonical thirteen-event fixture. It covers every
+declared boundary exactly once, including a divergent resume decision, one
+materialized split and distinct slice checkpoint, commit creation, push start
+and push completion. Its payloads contain no content or filesystem location.
+Local `.subactor/sessions/*/events.jsonl` files may remain large and ignored;
+durable publication is restricted to correlation/causation, digests, bounded
+envelope metadata and immutable receipt references.
 
 ## Protobuf and projections
 

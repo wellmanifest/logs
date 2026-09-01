@@ -1,9 +1,10 @@
 # Logs control-plane architecture
 
-Status: accepted v0.4 design. The v0.1 design came from `ticket-001`; `ticket-004`
+Status: accepted v0.5 design. The v0.1 design came from `ticket-001`; `ticket-004`
 revised it against the first real deployment, `ticket-011` added bounded
 adopter-owned error catalogs, and `ticket-013` added a closed operational
-diagnostic context without moving runtime ownership into this standard (see
+diagnostic context. `ticket-014` adds typed continuity metadata without moving
+session storage or runtime ownership into this standard (see
 [Deployment evidence](#deployment-evidence-c2004)).
 
 ## Scope
@@ -85,6 +86,8 @@ object. A stream has:
 - an optional closed `diagnostic` context for phase, status, retryability,
   attempt counters, duration, endpoint origin/reference, transport/HTTP status,
   remediation references and trace correlation;
+- an optional closed `continuity` payload, required only for the thirteen declared
+  session, checkpoint, resume, tool, split and Git slice event types;
 - `previousHash`, with 64 zeroes at genesis, and a recomputed `eventHash`;
 - explicit `rawOutputIncluded=false` and `secretMaterialIncluded=false`.
 
@@ -97,6 +100,48 @@ origin. Userinfo, paths, query strings and fragments are not representable, so
 a producer cannot accidentally persist a token-bearing request URL. Runtime
 codes and detailed procedures remain adopter-owned error/runbook references.
 The context is optional so every valid v0.1-v0.3 event remains valid in v0.4.
+
+### Continuity and streaming events
+
+The v0.5 family preserves each recovery and publication boundary as a separate
+typed event:
+
+| Event type | Durable payload | Required causal parent |
+| --- | --- | --- |
+| `agent.session_started` | session digest | none; correlation root |
+| `agent.intent_compiled` | source/intent digests and compiler receipt | `agent.session_started` |
+| `agent.tool_requested` | matching intent and request digests | `agent.intent_compiled` |
+| `agent.tool_completed` | matching request, result digest and execution receipt | `agent.tool_requested` |
+| `git.slice_checkpointed` | slice/validation digests and validation receipts | prior event in the correlation |
+| `work.split_requested` | parent work and split plan digests | prior event in the correlation |
+| `work.split_materialized` | matching split plan, child work digests and split receipt | `work.split_requested` |
+| `git.commit_created` | matching slice, commit digest and creation receipt | `git.slice_checkpointed` |
+| `git.push_started` | matching commit, push plan digest and start receipt | `git.commit_created` |
+| `git.push_completed` | matching commit/push plan, remote-state digest and completion receipt | `git.push_started` |
+| `agent.resume_observed` | snapshot, expected/observed state and observation digests plus receipt | `agent.snapshot_recorded` |
+| `agent.resume_decided` | matching observation, decision digest and receipt | `agent.resume_observed` |
+| `agent.snapshot_recorded` | snapshot/state digests and receipt | prior event in the correlation |
+
+Correlation and causation live in the event envelope. The typed payload contains
+only SHA-256 digests and `receipt://` references. It has no prompt, command,
+stdout/stderr, diff, patch, secret, arbitrary message, repository path or host
+path field. Closed variants make those classes of content unrepresentable,
+while replay checks that paired events carry the same intent, request, split,
+slice, commit, push plan, snapshot or observation digest. `intent_compiled` is
+the explicit NL → DSL boundary: `sourceDigest` binds the source language input
+without storing it, and `intentDigest` binds the closed compiled projection.
+
+Observation and decision are independent facts. `agent.resume_observed` records
+expected and observed state digests. Its causal `agent.resume_decided` must be
+`ACCEPTED/resume` when they match and `REJECTED/diverged` when they differ. In
+the same way, creating a commit does not imply that a push started, and a push
+start does not imply remote completion; all three have distinct events and
+receipts.
+
+Local runtimes may keep large ignored `.subactor/sessions/*/events.jsonl`
+transcripts for crash recovery. Publication into a durable Git stream is a
+projection boundary: emit only these bounded events and keep the raw local
+session outside the repository.
 
 ## Error knowledge
 
@@ -141,12 +186,13 @@ codes and runbooks.
 
 Contract revisions are immutable files. Historical events continue to point
 to `contracts/logs.contract.json` v0.2 and
-`contracts/logs.contract.v0.3.json` bytes; v0.4 is published separately as
-`contracts/logs.contract.v0.4.json`, with a separately versioned Protobuf file.
+`contracts/logs.contract.v0.3.json` bytes; v0.4 and v0.5 are published separately
+as immutable contract files. v0.5 uses the new immutable Protobuf root
+`proto/v0.5` instead of overwriting the v0.4 bytes under `proto/current`.
 A later revision adds new files and a successor event instead of changing
 evidence referenced by existing history.
 
-The Buf module selects only the v0.4 Protobuf root. The immutable predecessor
+The Buf module selects only the v0.5 Protobuf root. The immutable predecessors
 file remains evidence-addressable in Git outside the current compilation unit;
 compiling both would create duplicate package symbols rather than preserve
 compatibility.
@@ -203,3 +249,8 @@ than no field, because validation cannot distinguish absence from a value.
 15. Operational diagnostics are closed, bounded and secret-free: an endpoint
     is an origin/reference, retry counters are coherent and trace IDs are
     identifiers rather than arbitrary text.
+16. A continuity payload contains only digests and receipt references; raw
+    session content, diffs, secrets and host paths are not representable.
+17. Intent compilation, tool completion, materialized splits, commits, push
+    transitions and resume decisions reference a prior event in the same
+    correlation and preserve the relevant causal digest.
