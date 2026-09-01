@@ -1,0 +1,9 @@
+Bounded validation receipts only; raw prompts and command transcripts are excluded.
+
+- Repository validation: 2 streams, 15 events, 1 error definition
+- Conformance self-test: continuity and adversarial checks passed
+- Docker tests and repository conformance: passed with network disabled/read-only root
+- Buf 1.57.2 lint: passed with network disabled/read-only root and ephemeral cache
+- Governance exact diff: passed with zero findings
+- Existing `docker compose run --rm proto` wrapper cannot create `/root/.cache`;
+  the same pinned Buf image passed with an explicit tmpfs cache.

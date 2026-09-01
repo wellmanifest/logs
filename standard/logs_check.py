@@ -17,10 +17,11 @@ from pathlib import Path
 from typing import Any
 
 
-CONTRACT_PATH = Path("contracts/logs.contract.v0.4.json")
+CONTRACT_PATH = Path("contracts/logs.contract.v0.5.json")
 LEGACY_CONTRACT_PATHS = (
     Path("contracts/logs.contract.json"),
     Path("contracts/logs.contract.v0.3.json"),
+    Path("contracts/logs.contract.v0.4.json"),
 )
 HELP_PATH = "errors/LOGS-VALIDATION-001.md"
 DIAGNOSTIC_CODE = "LOGS-VALIDATION-001"
@@ -86,9 +87,84 @@ EXPECTED_REQUEST_GBNF = "\n".join(
         r'chars ::= ([^"\\\x00-\x1f] | "\\" (["\\/bfnrt] | "u" [0-9a-fA-F] [0-9a-fA-F] [0-9a-fA-F] [0-9a-fA-F]))*',
     )
 ) + "\n"
+CONTINUITY_EVENT_TYPES = (
+    "agent.session_started",
+    "agent.checkpoint_recorded",
+    "agent.resume_verified",
+    "agent.resume_diverged",
+    "agent.tool_planned",
+    "agent.tool_executed",
+    "work.split_requested",
+    "work.split_accepted",
+    "git.slice_ready",
+    "git.slice_pushed",
+)
+CONTINUITY_SCHEMA_NAMES = {
+    "agent.session_started": "sessionStarted",
+    "agent.checkpoint_recorded": "checkpointRecorded",
+    "agent.resume_verified": "resumeVerified",
+    "agent.resume_diverged": "resumeDiverged",
+    "agent.tool_planned": "toolPlanned",
+    "agent.tool_executed": "toolExecuted",
+    "work.split_requested": "splitRequested",
+    "work.split_accepted": "splitAccepted",
+    "git.slice_ready": "sliceReady",
+    "git.slice_pushed": "slicePushed",
+}
+CONTINUITY_FIELDS = {
+    "agent.session_started": {"sessionDigest", "intentDigest"},
+    "agent.checkpoint_recorded": {
+        "checkpointDigest",
+        "stateDigest",
+        "checkpointReceiptRef",
+    },
+    "agent.resume_verified": {
+        "checkpointDigest",
+        "stateDigest",
+        "verificationReceiptRef",
+    },
+    "agent.resume_diverged": {
+        "checkpointDigest",
+        "expectedStateDigest",
+        "observedStateDigest",
+        "verificationReceiptRef",
+    },
+    "agent.tool_planned": {"planDigest"},
+    "agent.tool_executed": {"planDigest", "resultDigest", "executionReceiptRef"},
+    "work.split_requested": {"parentWorkDigest", "splitPlanDigest"},
+    "work.split_accepted": {
+        "splitPlanDigest",
+        "acceptedWorkDigests",
+        "splitReceiptRef",
+    },
+    "git.slice_ready": {
+        "sliceDigest",
+        "validationDigests",
+        "validationReceiptRefs",
+    },
+    "git.slice_pushed": {"sliceDigest", "commitDigest", "pushReceiptRef"},
+}
+CAUSAL_PARENT_TYPES = {
+    "agent.resume_verified": "agent.checkpoint_recorded",
+    "agent.resume_diverged": "agent.checkpoint_recorded",
+    "agent.tool_executed": "agent.tool_planned",
+    "work.split_accepted": "work.split_requested",
+    "git.slice_pushed": "git.slice_ready",
+}
 EXPECTED_PROTO_MESSAGES = (
     "EvidenceRef",
     "DiagnosticContext",
+    "AgentSessionStarted",
+    "AgentCheckpointRecorded",
+    "AgentResumeVerified",
+    "AgentResumeDiverged",
+    "AgentToolPlanned",
+    "AgentToolExecuted",
+    "WorkSplitRequested",
+    "WorkSplitAccepted",
+    "GitSliceReady",
+    "GitSlicePushed",
+    "ContinuityPayload",
     "LogEvent",
     "ErrorDefinition",
     "InspectRequest",
@@ -109,6 +185,39 @@ EXPECTED_RPCS = (
     "rpc ExecuteAppend(ExecuteAppendRequest) returns (ExecuteAppendResponse);",
     "rpc ValidateRepository(ValidateRepositoryRequest) returns (ValidateRepositoryResponse);",
     "rpc ReadStream(ReadStreamRequest) returns (ReadStreamResponse);",
+)
+EXPECTED_CONTINUITY_PROTO_FIELDS = (
+    "string session_digest = 1;",
+    "string intent_digest = 2;",
+    "string checkpoint_digest = 1;",
+    "string state_digest = 2;",
+    "string checkpoint_receipt_ref = 3;",
+    "string verification_receipt_ref = 3;",
+    "string expected_state_digest = 2;",
+    "string observed_state_digest = 3;",
+    "string verification_receipt_ref = 4;",
+    "string plan_digest = 1;",
+    "string result_digest = 2;",
+    "string execution_receipt_ref = 3;",
+    "string parent_work_digest = 1;",
+    "string split_plan_digest = 2;",
+    "repeated string accepted_work_digests = 2;",
+    "string split_receipt_ref = 3;",
+    "string slice_digest = 1;",
+    "repeated string validation_digests = 2;",
+    "repeated string validation_receipt_refs = 3;",
+    "string commit_digest = 2;",
+    "string push_receipt_ref = 3;",
+    "AgentSessionStarted agent_session_started = 1;",
+    "AgentCheckpointRecorded agent_checkpoint_recorded = 2;",
+    "AgentResumeVerified agent_resume_verified = 3;",
+    "AgentResumeDiverged agent_resume_diverged = 4;",
+    "AgentToolPlanned agent_tool_planned = 5;",
+    "AgentToolExecuted agent_tool_executed = 6;",
+    "WorkSplitRequested work_split_requested = 7;",
+    "WorkSplitAccepted work_split_accepted = 8;",
+    "GitSliceReady git_slice_ready = 9;",
+    "GitSlicePushed git_slice_pushed = 10;",
 )
 
 
@@ -371,9 +480,9 @@ def load_contract(root: Path) -> tuple[dict[str, Any], str]:
     constants = {
         "$schema": "https://json-schema.org/draft/2020-12/schema",
         "schema": "wellmanifest.logs/contract-bundle/v1",
-        "version": "0.4.0",
+        "version": "0.5.0",
         "canonical": "protobuf",
-        "protobufPath": "proto/current/wellmanifest/logs/v1/logs.proto",
+        "protobufPath": "proto/v0.5/wellmanifest/logs/v1/logs.proto",
         "projection": "canonical-jsonl",
         "hashProfile": "wellmanifest-canonical-json-v1+SHA-256",
     }
@@ -406,6 +515,7 @@ def load_contract(root: Path) -> tuple[dict[str, Any], str]:
         {
             "severities",
             "eventTypes",
+            "continuityEventTypes",
             "outcomes",
             "errorCategories",
             "reservedErrorNamespaces",
@@ -430,6 +540,12 @@ def load_contract(root: Path) -> tuple[dict[str, Any], str]:
             "LOGS-CONTRACT-VOCABULARY",
             CONTRACT_PATH.as_posix(),
             "unordered categories or invalid reserved error namespaces",
+        )
+    if vocabulary["continuityEventTypes"] != list(CONTINUITY_EVENT_TYPES):
+        raise ContractFailure(
+            "LOGS-CONTRACT-CONTINUITY",
+            CONTRACT_PATH.as_posix(),
+            "continuity event vocabulary is incomplete or reordered",
         )
     event_properties = schemas["event"].get("properties", {})
     if event_properties.get("severity", {}).get("enum") != vocabulary["severities"]:
@@ -490,6 +606,48 @@ def load_contract(root: Path) -> tuple[dict[str, Any], str]:
             CONTRACT_PATH.as_posix(),
             "optional operational diagnostic schema is incomplete or no longer closed",
         )
+    event_definitions = schemas["event"].get("$defs", {})
+    continuity_property = event_properties.get("continuity", {})
+    continuity_refs = continuity_property.get("oneOf")
+    expected_refs = [
+        {"$ref": f"#/$defs/{CONTINUITY_SCHEMA_NAMES[event_type]}"}
+        for event_type in CONTINUITY_EVENT_TYPES
+    ]
+    if (
+        "continuity" in schemas["event"].get("required", [])
+        or continuity_refs != expected_refs
+        or any(
+            set(event_definitions.get(CONTINUITY_SCHEMA_NAMES[event_type], {}).get("required", []))
+            != fields
+            or set(
+                event_definitions.get(CONTINUITY_SCHEMA_NAMES[event_type], {}).get(
+                    "properties", {}
+                )
+            )
+            != fields
+            for event_type, fields in CONTINUITY_FIELDS.items()
+        )
+    ):
+        raise ContractFailure(
+            "LOGS-CONTRACT-CONTINUITY",
+            CONTRACT_PATH.as_posix(),
+            "continuity payload variants are incomplete or no longer closed",
+        )
+    continuity_conditions = schemas["event"].get("allOf")
+    conditioned_types = []
+    if isinstance(continuity_conditions, list):
+        for condition in continuity_conditions:
+            event_type_schema = condition.get("if", {}).get("properties", {}).get(
+                "eventType", {}
+            )
+            if "const" in event_type_schema:
+                conditioned_types.append(event_type_schema["const"])
+    if conditioned_types != list(CONTINUITY_EVENT_TYPES):
+        raise ContractFailure(
+            "LOGS-CONTRACT-CONTINUITY",
+            CONTRACT_PATH.as_posix(),
+            "continuity event-to-payload conditions are incomplete or reordered",
+        )
     error_properties = schemas["error"].get("properties", {})
     if error_properties.get("category", {}).get("enum") != vocabulary["errorCategories"]:
         raise ContractFailure(
@@ -522,7 +680,10 @@ def validate_proto(root: Path, bundle: dict[str, Any]) -> None:
         'syntax = "proto3";',
         "package wellmanifest.logs.v1;",
         "service LogsControlService {",
+        "oneof event {",
+        "optional ContinuityPayload continuity = 25;",
         *(f"message {name} {{" for name in EXPECTED_PROTO_MESSAGES),
+        *EXPECTED_CONTINUITY_PROTO_FIELDS,
         *EXPECTED_RPCS,
     ]
     vocabulary = bundle["vocabulary"]
@@ -782,6 +943,139 @@ def calculate_event_hash(event: dict[str, Any]) -> str:
     return sha256_bytes(canonical(payload).encode("utf-8"))
 
 
+def validate_continuity(
+    event: dict[str, Any],
+    *,
+    prior_events: dict[str, dict[str, Any]],
+    path: str,
+) -> None:
+    event_type = event["eventType"]
+    if event_type not in CONTINUITY_EVENT_TYPES:
+        if "continuity" in event:
+            raise ContractFailure(
+                "LOGS-EVENT-CONTINUITY",
+                path,
+                "continuity payload is only valid for a declared continuity event type",
+            )
+        return
+    if "continuity" not in event:
+        raise ContractFailure(
+            "LOGS-EVENT-CONTINUITY",
+            path,
+            "declared continuity event is missing its typed payload",
+        )
+    payload = exact_fields(
+        event["continuity"],
+        CONTINUITY_FIELDS[event_type],
+        rule="LOGS-EVENT-CONTINUITY",
+        path=path,
+    )
+    for name, item in payload.items():
+        if name.endswith("Digests"):
+            minimum = 2 if name == "acceptedWorkDigests" else 1
+            if (
+                not isinstance(item, list)
+                or not minimum <= len(item) <= 16
+                or len(item) != len(set(item))
+                or any(not isinstance(value, str) or SHA_RE.fullmatch(value) is None for value in item)
+            ):
+                raise ContractFailure(
+                    "LOGS-EVENT-CONTINUITY",
+                    path,
+                    "continuity digest list is invalid",
+                )
+        elif name.endswith("ReceiptRefs"):
+            if (
+                not isinstance(item, list)
+                or not 1 <= len(item) <= 16
+                or len(item) != len(set(item))
+                or any(
+                    not isinstance(value, str)
+                    or len(value) > 160
+                    or RECEIPT_RE.fullmatch(value) is None
+                    for value in item
+                )
+            ):
+                raise ContractFailure(
+                    "LOGS-EVENT-CONTINUITY",
+                    path,
+                    "continuity receipt reference list is invalid",
+                )
+        elif name.endswith("ReceiptRef"):
+            if (
+                not isinstance(item, str)
+                or len(item) > 160
+                or RECEIPT_RE.fullmatch(item) is None
+            ):
+                raise ContractFailure(
+                    "LOGS-EVENT-CONTINUITY",
+                    path,
+                    "continuity receipt reference is invalid",
+                )
+        elif not isinstance(item, str) or SHA_RE.fullmatch(item) is None:
+            raise ContractFailure(
+                "LOGS-EVENT-CONTINUITY",
+                path,
+                "continuity digest is invalid",
+            )
+
+    causation = event["causationId"]
+    if event_type == "agent.session_started":
+        if causation is not None:
+            raise ContractFailure(
+                "LOGS-EVENT-CONTINUITY-CAUSE",
+                path,
+                "a session start must be the continuity correlation root",
+            )
+        return
+    cause = prior_events.get(causation) if isinstance(causation, str) else None
+    if cause is None or cause.get("correlationId") != event["correlationId"]:
+        raise ContractFailure(
+            "LOGS-EVENT-CONTINUITY-CAUSE",
+            path,
+            "continuity causation must reference a prior event in the same correlation",
+        )
+    expected_parent_type = CAUSAL_PARENT_TYPES.get(event_type)
+    if expected_parent_type is not None and cause.get("eventType") != expected_parent_type:
+        raise ContractFailure(
+            "LOGS-EVENT-CONTINUITY-CAUSE",
+            path,
+            "continuity event references the wrong causal event type",
+        )
+    cause_payload = cause.get("continuity", {})
+    if event_type == "agent.resume_verified" and (
+        payload["checkpointDigest"] != cause_payload.get("checkpointDigest")
+        or payload["stateDigest"] != cause_payload.get("stateDigest")
+    ):
+        raise ContractFailure(
+            "LOGS-EVENT-CONTINUITY-DIGEST",
+            path,
+            "verified resume does not match its checkpoint digests",
+        )
+    if event_type == "agent.resume_diverged" and (
+        payload["checkpointDigest"] != cause_payload.get("checkpointDigest")
+        or payload["expectedStateDigest"] != cause_payload.get("stateDigest")
+        or payload["observedStateDigest"] == payload["expectedStateDigest"]
+    ):
+        raise ContractFailure(
+            "LOGS-EVENT-CONTINUITY-DIGEST",
+            path,
+            "diverged resume does not prove a different state from its checkpoint",
+        )
+    paired_digest_fields = {
+        "agent.tool_executed": "planDigest",
+        "work.split_accepted": "splitPlanDigest",
+        "git.slice_pushed": "sliceDigest",
+    }
+    paired_field = paired_digest_fields.get(event_type)
+    if paired_field is not None and payload[paired_field] != cause_payload.get(paired_field):
+        raise ContractFailure(
+            "LOGS-EVENT-CONTINUITY-DIGEST",
+            path,
+            "continuity event digest differs from its causal plan or slice",
+        )
+
+
 def validate_event(
     event: Any,
     *,
@@ -792,6 +1086,7 @@ def validate_event(
     stream: str,
     sequence: int,
     previous_hash: str,
+    prior_events: dict[str, dict[str, Any]],
 ) -> str:
     event_schema = bundle["schemas"]["event"]
     required = set(event_schema["required"])
@@ -889,6 +1184,7 @@ def validate_event(
         or RECEIPT_RE.fullmatch(receipt) is None
     ):
         raise ContractFailure("LOGS-EVENT-RECEIPT", path, "event receipt reference is invalid")
+    validate_continuity(value, prior_events=prior_events, path=path)
     diagnostic = value.get("diagnostic")
     if diagnostic is not None:
         validate_diagnostic(diagnostic, path)
@@ -1081,6 +1377,7 @@ def validate_streams(
         if not lines:
             raise ContractFailure("LOGS-STORE-EMPTY", relative, "stream contains no events")
         previous_hash = ZERO_HASH
+        prior_events: dict[str, dict[str, Any]] = {}
         for sequence, line in enumerate(lines, start=1):
             line_path = f"{relative}:{sequence}"
             if not line.endswith(b"\n") or line in {b"\n", b"\r\n"}:
@@ -1112,11 +1409,13 @@ def validate_streams(
                 stream=stream,
                 sequence=sequence,
                 previous_hash=previous_hash,
+                prior_events=prior_events,
             )
             event_id = event["eventId"]
             if event_id in event_ids:
                 raise ContractFailure("LOGS-EVENT-UNIQUE", line_path, "event ID is duplicated")
             event_ids.add(event_id)
+            prior_events[event_id] = event
             events_checked += 1
     return len(streams), events_checked
 
@@ -1242,23 +1541,31 @@ def copy_fixture(source: Path, destination: Path) -> None:
         CONTRACT_PATH,
         Path("proto/wellmanifest/logs/v1/logs.proto"),
         Path("proto/current/wellmanifest/logs/v1/logs.proto"),
+        Path("proto/v0.5/wellmanifest/logs/v1/logs.proto"),
         Path(HELP_PATH),
         Path("logs/control.jsonl"),
+        Path("logs/continuity.jsonl"),
     ):
         target = destination / relative
         target.parent.mkdir(parents=True, exist_ok=True)
         shutil.copy2(source / relative, target)
 
 
-def rewrite_event(path: Path, mutate: Any) -> None:
-    # Mutate the last event only. Rewriting an earlier one would break the
-    # successor's predecessor hash and mask the rule under test behind
-    # LOGS-EVENT-CHAIN.
+def rewrite_event_at(path: Path, index: int, mutate: Any) -> None:
     events = [json.loads(line) for line in path.read_text("utf-8").splitlines() if line]
-    event = events[-1]
+    if index < 0:
+        index += len(events)
+    event = events[index]
     mutate(event)
     event["eventHash"] = calculate_event_hash(event)
+    for successor_index in range(index + 1, len(events)):
+        events[successor_index]["previousHash"] = events[successor_index - 1]["eventHash"]
+        events[successor_index]["eventHash"] = calculate_event_hash(events[successor_index])
     path.write_text("".join(canonical(item) + "\n" for item in events), encoding="utf-8")
+
+
+def rewrite_event(path: Path, mutate: Any) -> None:
+    rewrite_event_at(path, -1, mutate)
 
 
 def assert_valid(root: Path, label: str) -> None:
@@ -1519,6 +1826,69 @@ def run_self_test(source: Path) -> None:
         )
         assert_invalid(attempt_order, "LOGS-EVENT-DIAGNOSTIC")
 
+        missing_continuity = Path(temporary) / "missing-continuity"
+        copy_fixture(source, missing_continuity)
+        rewrite_event_at(
+            missing_continuity / "logs/continuity.jsonl",
+            0,
+            lambda event: event.pop("continuity"),
+        )
+        assert_invalid(missing_continuity, "LOGS-EVENT-CONTINUITY")
+
+        for forbidden_field in (
+            "rawPrompt",
+            "rawDiff",
+            "secret",
+            "hostPath",
+            "toolStdout",
+            "toolStderr",
+        ):
+            forbidden = Path(temporary) / f"forbidden-{forbidden_field.lower()}"
+            copy_fixture(source, forbidden)
+            rewrite_event_at(
+                forbidden / "logs/continuity.jsonl",
+                4,
+                lambda event, field=forbidden_field: event["continuity"].update(
+                    {field: "excluded"}
+                ),
+            )
+            assert_invalid(forbidden, "LOGS-EVENT-CONTINUITY")
+
+        wrong_cause = Path(temporary) / "wrong-continuity-cause"
+        copy_fixture(source, wrong_cause)
+        rewrite_event(
+            wrong_cause / "logs/continuity.jsonl",
+            lambda event: event.update({"causationId": "event:continuity:001"}),
+        )
+        assert_invalid(wrong_cause, "LOGS-EVENT-CONTINUITY-CAUSE")
+
+        resume_digest = Path(temporary) / "resume-digest"
+        copy_fixture(source, resume_digest)
+        rewrite_event(
+            resume_digest / "logs/continuity.jsonl",
+            lambda event: event["continuity"].update({"checkpointDigest": "f" * 64}),
+        )
+        assert_invalid(resume_digest, "LOGS-EVENT-CONTINUITY-DIGEST")
+
+        pair_digest = Path(temporary) / "pair-digest"
+        copy_fixture(source, pair_digest)
+        rewrite_event_at(
+            pair_digest / "logs/continuity.jsonl",
+            4,
+            lambda event: event["continuity"].update({"planDigest": "e" * 64}),
+        )
+        assert_invalid(pair_digest, "LOGS-EVENT-CONTINUITY-DIGEST")
+
+        generic_payload = Path(temporary) / "generic-payload"
+        copy_fixture(source, generic_payload)
+        rewrite_event(
+            generic_payload / "logs/control.jsonl",
+            lambda event: event.update(
+                {"continuity": {"sessionDigest": "1" * 64, "intentDigest": "2" * 64}}
+            ),
+        )
+        assert_invalid(generic_payload, "LOGS-EVENT-CONTINUITY")
+
         docs = Path(temporary) / "docs"
         copy_fixture(source, docs)
         page = docs / HELP_PATH
@@ -1658,7 +2028,7 @@ def run_self_test(source: Path) -> None:
         extra_payload["diagnosticCodes"] = ["ONEDEV-TEST-001"]
         extra_catalog.write_text(json.dumps(extra_payload, indent=2) + "\n", encoding="utf-8")
         assert_error_adoption_invalid(source, extra_catalog, "LOGS-DOC-CATALOG")
-    print("logs conformance self-test: PASS (24 adversarial checks)")
+    print("logs conformance self-test: PASS (continuity and adversarial checks)")
 
 
 def print_report(result: dict[str, Any], output_format: str) -> None:

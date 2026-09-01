@@ -78,6 +78,7 @@ check closed schemas, request grammar and catalog
                         +--> event type: reserved core or namespaced deployment
                         +--> mode, source, subjectState, inputHash, receiptRef
                         +--> optional closed operational diagnostic
+                        +--> typed continuity payload + causal digest match
                         +--> event code resolves to error catalog
               |
               v
@@ -94,6 +95,38 @@ duration, a secret-free endpoint origin/reference, transport or HTTP status,
 runbook/error/knowledge references and optional W3C-sized trace identifiers.
 Unknown fields, credential-bearing URLs, path/query-bearing URLs and inverted
 attempt counters fail as `LOGS-EVENT-DIAGNOSTIC`.
+
+## Crash recovery and Git streaming
+
+```text
+agent.session_started
+        |
+        v
+agent.checkpoint_recorded -----> agent.resume_verified
+        |                                  |
+        +-----------------------> agent.resume_diverged
+                                           |
+agent.tool_planned -----------> agent.tool_executed
+                                           |
+work.split_requested ---------> work.split_accepted
+                                           |
+git.slice_ready --------------> git.slice_pushed
+```
+
+Every arrow is an event-ID causation reference within one correlation. The
+checker resolves it only against earlier events in the same stream, verifies
+the expected parent type for paired transitions and compares the checkpoint,
+plan, split or slice digest. A restart therefore decides from verifiable state:
+resume when the checkpoint state digest still matches, emit
+`agent.resume_diverged` when it does not, and never infer success from a raw
+transcript.
+
+`logs/continuity.jsonl` is the canonical ten-event fixture. It demonstrates a
+verified resume, a later divergence from the same checkpoint, one tool action,
+one accepted split and one pushed Git slice. Its payloads contain no content or
+filesystem location. Local `.subactor/sessions/*/events.jsonl` files may remain
+large and ignored; durable publication is restricted to correlation/causation,
+digests, bounded envelope metadata and immutable receipt references.
 
 ## Protobuf and projections
 

@@ -1,9 +1,10 @@
 # Logs control-plane architecture
 
-Status: accepted v0.4 design. The v0.1 design came from `ticket-001`; `ticket-004`
+Status: accepted v0.5 design. The v0.1 design came from `ticket-001`; `ticket-004`
 revised it against the first real deployment, `ticket-011` added bounded
 adopter-owned error catalogs, and `ticket-013` added a closed operational
-diagnostic context without moving runtime ownership into this standard (see
+diagnostic context. `ticket-014` adds typed continuity metadata without moving
+session storage or runtime ownership into this standard (see
 [Deployment evidence](#deployment-evidence-c2004)).
 
 ## Scope
@@ -85,6 +86,8 @@ object. A stream has:
 - an optional closed `diagnostic` context for phase, status, retryability,
   attempt counters, duration, endpoint origin/reference, transport/HTTP status,
   remediation references and trace correlation;
+- an optional closed `continuity` payload, required only for the ten declared
+  session, checkpoint, resume, tool, split and Git slice event types;
 - `previousHash`, with 64 zeroes at genesis, and a recomputed `eventHash`;
 - explicit `rawOutputIncluded=false` and `secretMaterialIncluded=false`.
 
@@ -97,6 +100,36 @@ origin. Userinfo, paths, query strings and fragments are not representable, so
 a producer cannot accidentally persist a token-bearing request URL. Runtime
 codes and detailed procedures remain adopter-owned error/runbook references.
 The context is optional so every valid v0.1-v0.3 event remains valid in v0.4.
+
+### Continuity and streaming events
+
+The v0.5 family is deliberately small and typed:
+
+| Event type | Durable payload | Required causal parent |
+| --- | --- | --- |
+| `agent.session_started` | session and intent digests | none; correlation root |
+| `agent.checkpoint_recorded` | checkpoint/state digests and checkpoint receipt | prior event in the correlation |
+| `agent.resume_verified` | checkpoint/state digests and verification receipt | `agent.checkpoint_recorded` |
+| `agent.resume_diverged` | checkpoint, expected/observed state digests and verification receipt | `agent.checkpoint_recorded` |
+| `agent.tool_planned` | tool plan digest | prior event in the correlation |
+| `agent.tool_executed` | matching plan digest, result digest and execution receipt | `agent.tool_planned` |
+| `work.split_requested` | parent work and split plan digests | prior event in the correlation |
+| `work.split_accepted` | matching split plan, child work digests and split receipt | `work.split_requested` |
+| `git.slice_ready` | slice/validation digests and validation receipts | prior event in the correlation |
+| `git.slice_pushed` | matching slice/commit digests and push receipt | `git.slice_ready` |
+
+Correlation and causation live in the event envelope. The typed payload contains
+only SHA-256 digests and `receipt://` references. It has no prompt, command,
+stdout/stderr, diff, patch, secret, arbitrary message, repository path or host
+path field. Closed variants make those classes of content unrepresentable,
+while replay checks that paired events carry the same plan, checkpoint or slice
+digest. A diverged resume additionally proves that observed state differs from
+the expected checkpoint state.
+
+Local runtimes may keep large ignored `.subactor/sessions/*/events.jsonl`
+transcripts for crash recovery. Publication into a durable Git stream is a
+projection boundary: emit only these bounded events and keep the raw local
+session outside the repository.
 
 ## Error knowledge
 
@@ -141,12 +174,13 @@ codes and runbooks.
 
 Contract revisions are immutable files. Historical events continue to point
 to `contracts/logs.contract.json` v0.2 and
-`contracts/logs.contract.v0.3.json` bytes; v0.4 is published separately as
-`contracts/logs.contract.v0.4.json`, with a separately versioned Protobuf file.
+`contracts/logs.contract.v0.3.json` bytes; v0.4 and v0.5 are published separately
+as immutable contract files. v0.5 uses the new immutable Protobuf root
+`proto/v0.5` instead of overwriting the v0.4 bytes under `proto/current`.
 A later revision adds new files and a successor event instead of changing
 evidence referenced by existing history.
 
-The Buf module selects only the v0.4 Protobuf root. The immutable predecessor
+The Buf module selects only the v0.5 Protobuf root. The immutable predecessors
 file remains evidence-addressable in Git outside the current compilation unit;
 compiling both would create duplicate package symbols rather than preserve
 compatibility.
@@ -203,3 +237,7 @@ than no field, because validation cannot distinguish absence from a value.
 15. Operational diagnostics are closed, bounded and secret-free: an endpoint
     is an origin/reference, retry counters are coherent and trace IDs are
     identifiers rather than arbitrary text.
+16. A continuity payload contains only digests and receipt references; raw
+    session content, diffs, secrets and host paths are not representable.
+17. Resume, tool execution, accepted splits and pushed slices reference a prior
+    event in the same correlation and preserve the relevant causal digest.

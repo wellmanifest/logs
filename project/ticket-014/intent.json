@@ -1,0 +1,74 @@
+{
+  "schema": "new-project.intent/v3",
+  "ticket": "ticket-014",
+  "summary": "Add typed continuity and streaming JSONL events",
+  "workstream": "integration",
+  "classification": {
+    "kind": "FEATURE",
+    "priority": "P1",
+    "origin": "requested"
+  },
+  "allowedPaths": [
+    "VERSION",
+    "buf.yaml",
+    "contracts/logs.contract.v0.5.json",
+    "proto/v0.5/wellmanifest/logs/v1/logs.proto",
+    "standard/logs_check.py",
+    "docs/ARCHITECTURE.md",
+    "docs/LOGIC_FLOW.md",
+    "logs/control.jsonl",
+    "logs/continuity.jsonl",
+    "project/ticket-014/**",
+    "project/TICKETS.md"
+  ],
+  "forbiddenPaths": ["project/ticket-*/user-*.md"],
+  "stacks": ["docker"],
+  "dependsOn": [],
+  "conflictsWith": [],
+  "integrationTicket": null,
+  "delivery": {
+    "acceptedBaseSha": "778421a7b6f45a417b7cb6f457375274709e2cb9",
+    "targetBranch": "main",
+    "outcome": "Long-running agents can publish bounded, typed continuity metadata and deterministically verify recovery, splits and Git slice causality without storing raw session content.",
+    "nonGoals": [
+      "No raw prompt, tool stdout/stderr, command, patch, diff, secret or host path",
+      "No local session transcript storage format",
+      "No append runtime or execution authority",
+      "No rewrite of v0.4 contract, Protobuf or existing event evidence"
+    ],
+    "complexity": "L",
+    "estimatedMinutes": 30,
+    "budgets": {
+      "maxImplementationFiles": 9,
+      "maxAffectedComponents": 4,
+      "maxPublicInterfaceChanges": 3,
+      "maxRuntimeDependencies": 0
+    },
+    "architecture": {
+      "status": "accepted",
+      "decision": "Add an optional closed continuity payload to the v1 event projection, require it for ten declared namespaced event types, mirror the variants as a Protobuf oneof and validate causal pair digests during replay.",
+      "components": [
+        {"name": "canonical-contract", "paths": ["VERSION", "buf.yaml", "contracts/**", "proto/v0.5/**", "logs/*.jsonl"]},
+        {"name": "conformance", "paths": ["standard/logs_check.py"]},
+        {"name": "architecture-guidance", "paths": ["docs/**"]},
+        {"name": "delivery-control", "paths": ["project/ticket-014/**", "project/TICKETS.md"]}
+      ],
+      "responsibilityChanges": false,
+      "interfaceChanges": [
+        "Ten continuity event type names and closed JSON payload variants",
+        "ContinuityPayload Protobuf oneof and ten variant messages",
+        "Causal pair validation for resume, tool, split and Git publication"
+      ],
+      "dataChanges": ["Continuity payload participates in canonical event hashing when present"],
+      "ui": {"impact": "none", "states": [], "evidence": []},
+      "rollback": "Stop emitting v0.5 continuity events and select the preserved v0.4 contract/root; existing v0.1-v0.4 streams remain unchanged."
+    },
+    "runtimeDependencies": [],
+    "validation": [
+      {"criterion": "AC-02", "commands": ["python3 standard/logs_check.py validate --root ."], "evidence": "The ten-event fixture conforms to the closed contract."},
+      {"criterion": "AC-03", "commands": ["python3 standard/logs_check.py self-test"], "evidence": "Causal and digest mismatch cases fail deterministically."},
+      {"criterion": "AC-04", "commands": ["python3 standard/logs_check.py self-test"], "evidence": "Forbidden content fields fail the closed payload contract."},
+      {"criterion": "AC-05", "commands": ["docker compose run --rm tests", "docker compose run --rm conformance", "docker run --rm --network none --read-only --cap-drop ALL --security-opt no-new-privileges --tmpfs /root/.cache:rw,nosuid,nodev,noexec,size=16m -v $PWD:/workspace:ro -w /workspace bufbuild/buf:1.57.2@sha256:60dea959d4a9ea381a2c9d6f8760678845234e086f632ec01a64bb588143a226 lint", "./project/governance-check.sh --actor agent", "git diff --check"], "evidence": "Host, container, Buf and exact governance checks pass."}
+    ]
+  }
+}
