@@ -17,8 +17,11 @@ from pathlib import Path
 from typing import Any
 
 
-CONTRACT_PATH = Path("contracts/logs.contract.v0.3.json")
-LEGACY_CONTRACT_PATHS = (Path("contracts/logs.contract.json"),)
+CONTRACT_PATH = Path("contracts/logs.contract.v0.4.json")
+LEGACY_CONTRACT_PATHS = (
+    Path("contracts/logs.contract.json"),
+    Path("contracts/logs.contract.v0.3.json"),
+)
 HELP_PATH = "errors/LOGS-VALIDATION-001.md"
 DIAGNOSTIC_CODE = "LOGS-VALIDATION-001"
 ZERO_HASH = "0" * 64
@@ -39,6 +42,15 @@ DOMAIN_TYPE_RE = re.compile(r"^(?!logs\.)[a-z][a-z0-9]*(?:\.[a-z][a-z0-9_]*)+$")
 SOURCE_RE = re.compile(r"^[a-z][a-z0-9]*(?:\.[a-z][a-z0-9_]*)*$")
 STATE_RE = re.compile(r"^[a-z][a-z0-9_]*$")
 RECEIPT_RE = re.compile(r"^receipt://[A-Za-z0-9._:/-]+$")
+ENDPOINT_REF_RE = re.compile(
+    r"^(?:endpoint:[A-Za-z0-9._:/-]+|https?://"
+    r"(?:[A-Za-z0-9](?:[A-Za-z0-9.-]{0,251}[A-Za-z0-9])?|\[[0-9A-Fa-f:.]+\])"
+    r"(?::[1-9][0-9]{0,4})?)$"
+)
+TRANSPORT_CODE_RE = re.compile(r"^[A-Z][A-Z0-9_]{1,63}$")
+REMEDIATION_REF_RE = re.compile(r"^(?:error|knowledge|runbook)://[A-Za-z0-9._:/-]+$")
+TRACE_ID_RE = re.compile(r"^[a-f0-9]{32}$")
+SPAN_ID_RE = re.compile(r"^[a-f0-9]{16}$")
 PATH_RE = re.compile(r"^(?!/)(?!.*(?:^|/)\.\.(?:/|$))[A-Za-z0-9._/-]+$")
 SHA_RE = re.compile(r"^[a-f0-9]{64}$")
 DATETIME_RE = re.compile(
@@ -76,6 +88,7 @@ EXPECTED_REQUEST_GBNF = "\n".join(
 ) + "\n"
 EXPECTED_PROTO_MESSAGES = (
     "EvidenceRef",
+    "DiagnosticContext",
     "LogEvent",
     "ErrorDefinition",
     "InspectRequest",
@@ -358,9 +371,9 @@ def load_contract(root: Path) -> tuple[dict[str, Any], str]:
     constants = {
         "$schema": "https://json-schema.org/draft/2020-12/schema",
         "schema": "wellmanifest.logs/contract-bundle/v1",
-        "version": "0.3.0",
+        "version": "0.4.0",
         "canonical": "protobuf",
-        "protobufPath": "proto/wellmanifest/logs/v1/logs.proto",
+        "protobufPath": "proto/current/wellmanifest/logs/v1/logs.proto",
         "projection": "canonical-jsonl",
         "hashProfile": "wellmanifest-canonical-json-v1+SHA-256",
     }
@@ -450,6 +463,32 @@ def load_contract(root: Path) -> tuple[dict[str, Any], str]:
             "LOGS-CONTRACT-VOCABULARY",
             CONTRACT_PATH.as_posix(),
             "event outcome schema differs from vocabulary",
+        )
+    diagnostic_fields = {
+        "phase",
+        "status",
+        "retryable",
+        "attempt",
+        "attempts",
+        "durationMs",
+        "endpointRef",
+        "transportCode",
+        "httpStatus",
+        "remediationRefs",
+        "traceId",
+        "spanId",
+    }
+    diagnostic_schema = schemas["event"].get("$defs", {}).get("diagnostic", {})
+    if (
+        "diagnostic" in schemas["event"].get("required", [])
+        or event_properties.get("diagnostic") != {"$ref": "#/$defs/diagnostic"}
+        or set(diagnostic_schema.get("required", [])) != diagnostic_fields
+        or set(diagnostic_schema.get("properties", {})) != diagnostic_fields
+    ):
+        raise ContractFailure(
+            "LOGS-CONTRACT-DIAGNOSTIC",
+            CONTRACT_PATH.as_posix(),
+            "optional operational diagnostic schema is incomplete or no longer closed",
         )
     error_properties = schemas["error"].get("properties", {})
     if error_properties.get("category", {}).get("enum") != vocabulary["errorCategories"]:
@@ -754,8 +793,19 @@ def validate_event(
     sequence: int,
     previous_hash: str,
 ) -> str:
-    required = set(bundle["schemas"]["event"]["required"])
-    value = exact_fields(event, required, rule="LOGS-EVENT-FIELDS", path=path)
+    event_schema = bundle["schemas"]["event"]
+    required = set(event_schema["required"])
+    allowed = set(event_schema["properties"])
+    if not isinstance(event, dict):
+        raise ContractFailure("LOGS-EVENT-FIELDS", path, "document must be an object")
+    observed = set(event)
+    if not required.issubset(observed) or not observed.issubset(allowed):
+        raise ContractFailure(
+            "LOGS-EVENT-FIELDS",
+            path,
+            "document fields do not match the closed contract",
+        )
+    value = event
     if value.get("schema") != "wellmanifest.logs/event/v1":
         raise ContractFailure("LOGS-EVENT-SCHEMA", path, "event schema is unsupported")
     if not isinstance(value.get("eventId"), str) or EVENT_ID_RE.fullmatch(value["eventId"]) is None:
@@ -839,6 +889,9 @@ def validate_event(
         or RECEIPT_RE.fullmatch(receipt) is None
     ):
         raise ContractFailure("LOGS-EVENT-RECEIPT", path, "event receipt reference is invalid")
+    diagnostic = value.get("diagnostic")
+    if diagnostic is not None:
+        validate_diagnostic(diagnostic, path)
     evidence = value.get("evidence")
     # File evidence is optional because inputHash already binds the command
     # input; high-frequency domain events produce no artefact to reference.
@@ -875,6 +928,121 @@ def validate_event(
     if calculate_event_hash(value) != event_hash:
         raise ContractFailure("LOGS-EVENT-HASH", path, "event hash differs from canonical bytes")
     return event_hash
+
+
+def validate_diagnostic(value: Any, path: str) -> None:
+    fields = {
+        "phase",
+        "status",
+        "retryable",
+        "attempt",
+        "attempts",
+        "durationMs",
+        "endpointRef",
+        "transportCode",
+        "httpStatus",
+        "remediationRefs",
+        "traceId",
+        "spanId",
+    }
+    diagnostic = exact_fields(
+        value,
+        fields,
+        rule="LOGS-EVENT-DIAGNOSTIC",
+        path=path,
+    )
+    for name in ("phase", "status"):
+        item = diagnostic.get(name)
+        if (
+            not isinstance(item, str)
+            or len(item) > 32
+            or STATE_RE.fullmatch(item) is None
+        ):
+            raise ContractFailure(
+                "LOGS-EVENT-DIAGNOSTIC", path, f"diagnostic {name} is invalid"
+            )
+    if not isinstance(diagnostic.get("retryable"), bool):
+        raise ContractFailure(
+            "LOGS-EVENT-DIAGNOSTIC", path, "diagnostic retryability is invalid"
+        )
+    attempt = diagnostic.get("attempt")
+    attempts = diagnostic.get("attempts")
+    if (
+        isinstance(attempt, bool)
+        or not isinstance(attempt, int)
+        or isinstance(attempts, bool)
+        or not isinstance(attempts, int)
+        or not 1 <= attempt <= attempts <= 1000
+    ):
+        raise ContractFailure(
+            "LOGS-EVENT-DIAGNOSTIC", path, "diagnostic attempt counters are invalid"
+        )
+    duration = diagnostic.get("durationMs")
+    if (
+        isinstance(duration, bool)
+        or not isinstance(duration, int)
+        or not 0 <= duration <= 604800000
+    ):
+        raise ContractFailure(
+            "LOGS-EVENT-DIAGNOSTIC", path, "diagnostic duration is invalid"
+        )
+    endpoint = diagnostic.get("endpointRef")
+    if endpoint is not None and (
+        not isinstance(endpoint, str)
+        or len(endpoint) > 255
+        or ENDPOINT_REF_RE.fullmatch(endpoint) is None
+    ):
+        raise ContractFailure(
+            "LOGS-EVENT-DIAGNOSTIC",
+            path,
+            "endpoint reference is not a secret-free origin or opaque reference",
+        )
+    transport = diagnostic.get("transportCode")
+    if transport is not None and (
+        not isinstance(transport, str)
+        or TRANSPORT_CODE_RE.fullmatch(transport) is None
+    ):
+        raise ContractFailure(
+            "LOGS-EVENT-DIAGNOSTIC", path, "diagnostic transport code is invalid"
+        )
+    http_status = diagnostic.get("httpStatus")
+    if http_status is not None and (
+        isinstance(http_status, bool)
+        or not isinstance(http_status, int)
+        or not 100 <= http_status <= 599
+    ):
+        raise ContractFailure(
+            "LOGS-EVENT-DIAGNOSTIC", path, "diagnostic HTTP status is invalid"
+        )
+    remediation_refs = diagnostic.get("remediationRefs")
+    if (
+        not isinstance(remediation_refs, list)
+        or len(remediation_refs) > 8
+        or len(remediation_refs) != len(set(remediation_refs))
+        or any(
+            not isinstance(item, str)
+            or len(item) > 200
+            or REMEDIATION_REF_RE.fullmatch(item) is None
+            for item in remediation_refs
+        )
+    ):
+        raise ContractFailure(
+            "LOGS-EVENT-DIAGNOSTIC", path, "diagnostic remediation references are invalid"
+        )
+    trace_id = diagnostic.get("traceId")
+    span_id = diagnostic.get("spanId")
+    if trace_id is not None and (
+        not isinstance(trace_id, str) or TRACE_ID_RE.fullmatch(trace_id) is None
+    ):
+        raise ContractFailure(
+            "LOGS-EVENT-DIAGNOSTIC", path, "diagnostic trace ID is invalid"
+        )
+    if span_id is not None and (
+        not isinstance(span_id, str) or SPAN_ID_RE.fullmatch(span_id) is None
+    ):
+        raise ContractFailure(
+            "LOGS-EVENT-DIAGNOSTIC", path, "diagnostic span ID is invalid"
+        )
 
 
 def validate_streams(
@@ -1073,6 +1241,7 @@ def copy_fixture(source: Path, destination: Path) -> None:
         *LEGACY_CONTRACT_PATHS,
         CONTRACT_PATH,
         Path("proto/wellmanifest/logs/v1/logs.proto"),
+        Path("proto/current/wellmanifest/logs/v1/logs.proto"),
         Path(HELP_PATH),
         Path("logs/control.jsonl"),
     ):
@@ -1274,6 +1443,81 @@ def run_self_test(source: Path) -> None:
             lambda event: event.update({"subjectState": "SUCCEEDED "}),
         )
         assert_invalid(state, "LOGS-EVENT-STATE")
+
+        diagnostic = Path(temporary) / "diagnostic"
+        copy_fixture(source, diagnostic)
+        rewrite_event(
+            diagnostic / "logs/control.jsonl",
+            lambda event: event.update(
+                {
+                    "diagnostic": {
+                        "phase": "requesting_link",
+                        "status": "failed",
+                        "retryable": True,
+                        "attempt": 2,
+                        "attempts": 3,
+                        "durationMs": 1501,
+                        "endpointRef": "http://127.0.0.1:18081",
+                        "transportCode": "ECONNREFUSED",
+                        "httpStatus": None,
+                        "remediationRefs": ["error://subactor/login-endpoint-unreachable"],
+                        "traceId": "1" * 32,
+                        "spanId": "2" * 16,
+                    }
+                }
+            ),
+        )
+        assert_valid(diagnostic, "typed operational diagnostic")
+
+        credential_endpoint = Path(temporary) / "credential-endpoint"
+        copy_fixture(source, credential_endpoint)
+        rewrite_event(
+            credential_endpoint / "logs/control.jsonl",
+            lambda event: event.update(
+                {
+                    "diagnostic": {
+                        "phase": "requesting_link",
+                        "status": "failed",
+                        "retryable": False,
+                        "attempt": 1,
+                        "attempts": 1,
+                        "durationMs": 1,
+                        "endpointRef": "https://user:secret@example.test/login?token=secret",
+                        "transportCode": None,
+                        "httpStatus": 401,
+                        "remediationRefs": [],
+                        "traceId": None,
+                        "spanId": None,
+                    }
+                }
+            ),
+        )
+        assert_invalid(credential_endpoint, "LOGS-EVENT-DIAGNOSTIC")
+
+        attempt_order = Path(temporary) / "attempt-order"
+        copy_fixture(source, attempt_order)
+        rewrite_event(
+            attempt_order / "logs/control.jsonl",
+            lambda event: event.update(
+                {
+                    "diagnostic": {
+                        "phase": "polling_approval",
+                        "status": "retrying",
+                        "retryable": True,
+                        "attempt": 3,
+                        "attempts": 2,
+                        "durationMs": 10,
+                        "endpointRef": "endpoint:founder-control",
+                        "transportCode": None,
+                        "httpStatus": None,
+                        "remediationRefs": ["knowledge://subactor/login/v1"],
+                        "traceId": None,
+                        "spanId": None,
+                    }
+                }
+            ),
+        )
+        assert_invalid(attempt_order, "LOGS-EVENT-DIAGNOSTIC")
 
         docs = Path(temporary) / "docs"
         copy_fixture(source, docs)

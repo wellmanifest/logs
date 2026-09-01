@@ -1,10 +1,9 @@
 version: v2
 modules:
-  - path: proto
+  - path: proto/current
 lint:
   use:
     - STANDARD
 breaking:
   use:
     - FILE
-

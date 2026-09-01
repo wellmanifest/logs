@@ -1,0 +1,70 @@
+{
+  "schema": "new-project.intent/v3",
+  "ticket": "ticket-013",
+  "summary": "Add typed operational diagnostics to logs",
+  "workstream": "integration",
+  "classification": {
+    "kind": "FEATURE",
+    "priority": "P1",
+    "origin": "requested"
+  },
+  "allowedPaths": [
+    "VERSION",
+    "buf.yaml",
+    "contracts/logs.contract.v0.4.json",
+    "proto/current/wellmanifest/logs/v1/logs.proto",
+    "standard/logs_check.py",
+    "docs/ARCHITECTURE.md",
+    "docs/LOGIC_FLOW.md",
+    "errors/LOGS-VALIDATION-001.md",
+    "logs/control.jsonl",
+    "project/ticket-013/**",
+    "project/TICKETS.md"
+  ],
+  "forbiddenPaths": ["project/ticket-*/user-*.md"],
+  "stacks": ["docker"],
+  "dependsOn": [],
+  "conflictsWith": ["ticket-007"],
+  "integrationTicket": null,
+  "delivery": {
+    "acceptedBaseSha": "48c284ef7a069055c0bcb6b900147ce5e65f8b43",
+    "targetBranch": "main",
+    "outcome": "Log events can carry bounded, secret-free operational diagnostics without introducing an arbitrary payload or breaking existing v1 events.",
+    "nonGoals": [
+      "No raw response body, credential, token, query string or free-form payload",
+      "No change to hash-chain semantics",
+      "No requirement that existing v1 events add a diagnostic context",
+      "No runtime implementation owned by Subactor"
+    ],
+    "complexity": "L",
+    "estimatedMinutes": 30,
+    "budgets": {
+      "maxImplementationFiles": 10,
+      "maxAffectedComponents": 4,
+      "maxPublicInterfaceChanges": 2,
+      "maxRuntimeDependencies": 0
+    },
+    "architecture": {
+      "status": "accepted",
+      "decision": "Add one optional closed DiagnosticContext projection to LogEvent with bounded lifecycle, retry, transport and tracing fields; retain the canonical event schema and all existing fields.",
+      "components": [
+        {"name": "canonical-contract", "paths": ["VERSION", "buf.yaml", "contracts/**", "proto/**", "logs/control.jsonl"]},
+        {"name": "conformance", "paths": ["standard/logs_check.py", "errors/LOGS-VALIDATION-001.md"]},
+        {"name": "architecture-guidance", "paths": ["docs/**"]},
+        {"name": "delivery-control", "paths": ["project/ticket-013/**", "project/TICKETS.md"]}
+      ],
+      "responsibilityChanges": false,
+      "interfaceChanges": ["Optional LogEvent diagnostic context", "DiagnosticContext Protobuf message"],
+      "dataChanges": ["Optional diagnostic object participates in canonical hashing when present"],
+      "ui": {"impact": "none", "states": [], "evidence": []},
+      "rollback": "Revert the optional context addition; pre-existing event streams remain valid throughout."
+    },
+    "runtimeDependencies": [],
+    "validation": [
+      {"criterion": "AC-02", "commands": ["python3 standard/logs_check.py self-test"], "evidence": "Valid operational context passes and unsafe endpoint references fail closed."},
+      {"criterion": "AC-03", "commands": ["python3 standard/logs_check.py validate --root ."], "evidence": "Repository and example streams conform."},
+      {"criterion": "AC-04", "commands": ["docker compose run --rm conformance"], "evidence": "Container conformance remains deterministic."},
+      {"criterion": "AC-05", "commands": ["./project/governance-check.sh --actor agent", "git diff --check"], "evidence": "Governance and whitespace checks pass."}
+    ]
+  }
+}
