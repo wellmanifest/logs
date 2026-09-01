@@ -46,7 +46,7 @@
     },
     "architecture": {
       "status": "accepted",
-      "decision": "Add an optional closed continuity payload to the v1 event projection, require it for ten declared namespaced event types, mirror the variants as a Protobuf oneof and validate causal pair digests during replay.",
+      "decision": "Add an optional closed continuity payload to the v1 event projection, require it for thirteen declared namespaced event types, mirror the variants as a Protobuf oneof and validate each recovery and publication boundary during replay.",
       "components": [
         {"name": "canonical-contract", "paths": ["VERSION", "buf.yaml", "contracts/**", "proto/v0.5/**", "logs/*.jsonl"]},
         {"name": "conformance", "paths": ["standard/logs_check.py"]},
@@ -55,9 +55,9 @@
       ],
       "responsibilityChanges": false,
       "interfaceChanges": [
-        "Ten continuity event type names and closed JSON payload variants",
-        "ContinuityPayload Protobuf oneof and ten variant messages",
-        "Causal pair validation for resume, tool, split and Git publication"
+        "Thirteen continuity event type names and closed JSON payload variants",
+        "ContinuityPayload Protobuf oneof and thirteen variant messages",
+        "Causal validation for NL-to-DSL, resume, tool, split and Git publication boundaries"
       ],
       "dataChanges": ["Continuity payload participates in canonical event hashing when present"],
       "ui": {"impact": "none", "states": [], "evidence": []},
@@ -65,7 +65,7 @@
     },
     "runtimeDependencies": [],
     "validation": [
-      {"criterion": "AC-02", "commands": ["python3 standard/logs_check.py validate --root ."], "evidence": "The ten-event fixture conforms to the closed contract."},
+      {"criterion": "AC-02", "commands": ["python3 standard/logs_check.py validate --root ."], "evidence": "The thirteen-event fixture covers every declared boundary exactly once."},
       {"criterion": "AC-03", "commands": ["python3 standard/logs_check.py self-test"], "evidence": "Causal and digest mismatch cases fail deterministically."},
       {"criterion": "AC-04", "commands": ["python3 standard/logs_check.py self-test"], "evidence": "Forbidden content fields fail the closed payload contract."},
       {"criterion": "AC-05", "commands": ["docker compose run --rm tests", "docker compose run --rm conformance", "docker run --rm --network none --read-only --cap-drop ALL --security-opt no-new-privileges --tmpfs /root/.cache:rw,nosuid,nodev,noexec,size=16m -v $PWD:/workspace:ro -w /workspace bufbuild/buf:1.57.2@sha256:60dea959d4a9ea381a2c9d6f8760678845234e086f632ec01a64bb588143a226 lint", "./project/governance-check.sh --actor agent", "git diff --check"], "evidence": "Host, container, Buf and exact governance checks pass."}

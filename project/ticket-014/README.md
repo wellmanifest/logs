@@ -8,16 +8,17 @@
 
 ## Goal and scope
 
-Publish v0.5 with ten typed continuity/streaming events for sessions,
-checkpoints, resume decisions, tool execution, work splits and Git slices.
+Publish v0.5 with thirteen typed continuity/streaming events for sessions,
+NL→DSL compilation, tools, snapshots, resume observation/decision, work splits
+and distinct Git checkpoint/commit/push-start/push-completion boundaries.
 Durable payloads contain only bounded digests and receipt references; raw
 prompts, diffs, secrets, tool output and host paths remain unrepresentable.
 
 ## Acceptance criteria
 
 - [x] AC-01: Bounded intent records the compatible v0.5 extension.
-- [x] AC-02: Each continuity event has a closed payload matched to its event type.
-- [x] AC-03: Causal pairs and digest continuity validate deterministically.
+- [x] AC-02: Each of the thirteen continuity events has a closed matched payload.
+- [x] AC-03: Causal boundaries and digest continuity validate deterministically.
 - [x] AC-04: Raw prompts, diffs, secrets, tool output and host paths fail closed.
 - [x] AC-05: Python, Docker, Protobuf and governance checks pass.
 

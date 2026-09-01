@@ -86,7 +86,7 @@ object. A stream has:
 - an optional closed `diagnostic` context for phase, status, retryability,
   attempt counters, duration, endpoint origin/reference, transport/HTTP status,
   remediation references and trace correlation;
-- an optional closed `continuity` payload, required only for the ten declared
+- an optional closed `continuity` payload, required only for the thirteen declared
   session, checkpoint, resume, tool, split and Git slice event types;
 - `previousHash`, with 64 zeroes at genesis, and a recomputed `eventHash`;
 - explicit `rawOutputIncluded=false` and `secretMaterialIncluded=false`.
@@ -103,28 +103,40 @@ The context is optional so every valid v0.1-v0.3 event remains valid in v0.4.
 
 ### Continuity and streaming events
 
-The v0.5 family is deliberately small and typed:
+The v0.5 family preserves each recovery and publication boundary as a separate
+typed event:
 
 | Event type | Durable payload | Required causal parent |
 | --- | --- | --- |
-| `agent.session_started` | session and intent digests | none; correlation root |
-| `agent.checkpoint_recorded` | checkpoint/state digests and checkpoint receipt | prior event in the correlation |
-| `agent.resume_verified` | checkpoint/state digests and verification receipt | `agent.checkpoint_recorded` |
-| `agent.resume_diverged` | checkpoint, expected/observed state digests and verification receipt | `agent.checkpoint_recorded` |
-| `agent.tool_planned` | tool plan digest | prior event in the correlation |
-| `agent.tool_executed` | matching plan digest, result digest and execution receipt | `agent.tool_planned` |
+| `agent.session_started` | session digest | none; correlation root |
+| `agent.intent_compiled` | source/intent digests and compiler receipt | `agent.session_started` |
+| `agent.tool_requested` | matching intent and request digests | `agent.intent_compiled` |
+| `agent.tool_completed` | matching request, result digest and execution receipt | `agent.tool_requested` |
+| `git.slice_checkpointed` | slice/validation digests and validation receipts | prior event in the correlation |
 | `work.split_requested` | parent work and split plan digests | prior event in the correlation |
-| `work.split_accepted` | matching split plan, child work digests and split receipt | `work.split_requested` |
-| `git.slice_ready` | slice/validation digests and validation receipts | prior event in the correlation |
-| `git.slice_pushed` | matching slice/commit digests and push receipt | `git.slice_ready` |
+| `work.split_materialized` | matching split plan, child work digests and split receipt | `work.split_requested` |
+| `git.commit_created` | matching slice, commit digest and creation receipt | `git.slice_checkpointed` |
+| `git.push_started` | matching commit, push plan digest and start receipt | `git.commit_created` |
+| `git.push_completed` | matching commit/push plan, remote-state digest and completion receipt | `git.push_started` |
+| `agent.resume_observed` | snapshot, expected/observed state and observation digests plus receipt | `agent.snapshot_recorded` |
+| `agent.resume_decided` | matching observation, decision digest and receipt | `agent.resume_observed` |
+| `agent.snapshot_recorded` | snapshot/state digests and receipt | prior event in the correlation |
 
 Correlation and causation live in the event envelope. The typed payload contains
 only SHA-256 digests and `receipt://` references. It has no prompt, command,
 stdout/stderr, diff, patch, secret, arbitrary message, repository path or host
 path field. Closed variants make those classes of content unrepresentable,
-while replay checks that paired events carry the same plan, checkpoint or slice
-digest. A diverged resume additionally proves that observed state differs from
-the expected checkpoint state.
+while replay checks that paired events carry the same intent, request, split,
+slice, commit, push plan, snapshot or observation digest. `intent_compiled` is
+the explicit NL → DSL boundary: `sourceDigest` binds the source language input
+without storing it, and `intentDigest` binds the closed compiled projection.
+
+Observation and decision are independent facts. `agent.resume_observed` records
+expected and observed state digests. Its causal `agent.resume_decided` must be
+`ACCEPTED/resume` when they match and `REJECTED/diverged` when they differ. In
+the same way, creating a commit does not imply that a push started, and a push
+start does not imply remote completion; all three have distinct events and
+receipts.
 
 Local runtimes may keep large ignored `.subactor/sessions/*/events.jsonl`
 transcripts for crash recovery. Publication into a durable Git stream is a
@@ -239,5 +251,6 @@ than no field, because validation cannot distinguish absence from a value.
     identifiers rather than arbitrary text.
 16. A continuity payload contains only digests and receipt references; raw
     session content, diffs, secrets and host paths are not representable.
-17. Resume, tool execution, accepted splits and pushed slices reference a prior
-    event in the same correlation and preserve the relevant causal digest.
+17. Intent compilation, tool completion, materialized splits, commits, push
+    transitions and resume decisions reference a prior event in the same
+    correlation and preserve the relevant causal digest.

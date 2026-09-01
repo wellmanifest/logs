@@ -71,36 +71,31 @@ message DiagnosticContext {
 // and causation remain in the enclosing LogEvent; session content never does.
 message AgentSessionStarted {
   string session_digest = 1;
+}
+
+// The explicit NL -> DSL boundary. source_digest binds the source request
+// without retaining it; intent_digest binds the closed compiled projection.
+message AgentIntentCompiled {
+  string source_digest = 1;
   string intent_digest = 2;
+  string compiler_receipt_ref = 3;
 }
 
-message AgentCheckpointRecorded {
-  string checkpoint_digest = 1;
-  string state_digest = 2;
-  string checkpoint_receipt_ref = 3;
+message AgentToolRequested {
+  string intent_digest = 1;
+  string request_digest = 2;
 }
 
-message AgentResumeVerified {
-  string checkpoint_digest = 1;
-  string state_digest = 2;
-  string verification_receipt_ref = 3;
-}
-
-message AgentResumeDiverged {
-  string checkpoint_digest = 1;
-  string expected_state_digest = 2;
-  string observed_state_digest = 3;
-  string verification_receipt_ref = 4;
-}
-
-message AgentToolPlanned {
-  string plan_digest = 1;
-}
-
-message AgentToolExecuted {
-  string plan_digest = 1;
+message AgentToolCompleted {
+  string request_digest = 1;
   string result_digest = 2;
   string execution_receipt_ref = 3;
+}
+
+message GitSliceCheckpointed {
+  string slice_digest = 1;
+  repeated string validation_digests = 2;
+  repeated string validation_receipt_refs = 3;
 }
 
 message WorkSplitRequested {
@@ -108,36 +103,66 @@ message WorkSplitRequested {
   string split_plan_digest = 2;
 }
 
-message WorkSplitAccepted {
+message WorkSplitMaterialized {
   string split_plan_digest = 1;
   repeated string accepted_work_digests = 2;
   string split_receipt_ref = 3;
 }
 
-message GitSliceReady {
-  string slice_digest = 1;
-  repeated string validation_digests = 2;
-  repeated string validation_receipt_refs = 3;
-}
-
-message GitSlicePushed {
+message GitCommitCreated {
   string slice_digest = 1;
   string commit_digest = 2;
-  string push_receipt_ref = 3;
+  string commit_receipt_ref = 3;
+}
+
+message GitPushStarted {
+  string commit_digest = 1;
+  string push_plan_digest = 2;
+  string push_start_receipt_ref = 3;
+}
+
+message GitPushCompleted {
+  string commit_digest = 1;
+  string push_plan_digest = 2;
+  string remote_state_digest = 3;
+  string push_receipt_ref = 4;
+}
+
+message AgentResumeObserved {
+  string snapshot_digest = 1;
+  string expected_state_digest = 2;
+  string observed_state_digest = 3;
+  string observation_digest = 4;
+  string observation_receipt_ref = 5;
+}
+
+message AgentResumeDecided {
+  string observation_digest = 1;
+  string decision_digest = 2;
+  string decision_receipt_ref = 3;
+}
+
+message AgentSnapshotRecorded {
+  string snapshot_digest = 1;
+  string state_digest = 2;
+  string snapshot_receipt_ref = 3;
 }
 
 message ContinuityPayload {
   oneof event {
     AgentSessionStarted agent_session_started = 1;
-    AgentCheckpointRecorded agent_checkpoint_recorded = 2;
-    AgentResumeVerified agent_resume_verified = 3;
-    AgentResumeDiverged agent_resume_diverged = 4;
-    AgentToolPlanned agent_tool_planned = 5;
-    AgentToolExecuted agent_tool_executed = 6;
-    WorkSplitRequested work_split_requested = 7;
-    WorkSplitAccepted work_split_accepted = 8;
-    GitSliceReady git_slice_ready = 9;
-    GitSlicePushed git_slice_pushed = 10;
+    AgentIntentCompiled agent_intent_compiled = 2;
+    AgentToolRequested agent_tool_requested = 3;
+    AgentToolCompleted agent_tool_completed = 4;
+    GitSliceCheckpointed git_slice_checkpointed = 5;
+    WorkSplitRequested work_split_requested = 6;
+    WorkSplitMaterialized work_split_materialized = 7;
+    GitCommitCreated git_commit_created = 8;
+    GitPushStarted git_push_started = 9;
+    GitPushCompleted git_push_completed = 10;
+    AgentResumeObserved agent_resume_observed = 11;
+    AgentResumeDecided agent_resume_decided = 12;
+    AgentSnapshotRecorded agent_snapshot_recorded = 13;
   }
 }
 
@@ -175,7 +200,7 @@ message LogEvent {
   optional string receipt_ref = 23;
   // Optional so every valid v0.1-v0.4 event remains a valid v0.5 event.
   optional DiagnosticContext diagnostic = 24;
-  // Required by policy for the ten declared continuity event type strings.
+  // Required by policy for the thirteen declared continuity event type strings.
   optional ContinuityPayload continuity = 25;
 }
 

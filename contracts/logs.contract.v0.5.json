@@ -35,15 +35,18 @@
     ],
     "continuityEventTypes": [
       "agent.session_started",
-      "agent.checkpoint_recorded",
-      "agent.resume_verified",
-      "agent.resume_diverged",
-      "agent.tool_planned",
-      "agent.tool_executed",
+      "agent.intent_compiled",
+      "agent.tool_requested",
+      "agent.tool_completed",
+      "git.slice_checkpointed",
       "work.split_requested",
-      "work.split_accepted",
-      "git.slice_ready",
-      "git.slice_pushed"
+      "work.split_materialized",
+      "git.commit_created",
+      "git.push_started",
+      "git.push_completed",
+      "agent.resume_observed",
+      "agent.resume_decided",
+      "agent.snapshot_recorded"
     ],
     "outcomes": [
       "OBSERVED",
@@ -282,7 +285,7 @@
               "type": "string",
               "minLength": 11,
               "maxLength": 160,
-              "pattern": "^receipt://[A-Za-z0-9._:/-]+$"
+              "pattern": "^receipt://[a-z0-9][a-z0-9.-]{0,63}(?:/[A-Za-z0-9][A-Za-z0-9._:-]{0,63}){1,8}$"
             }
           ]
         },
@@ -306,30 +309,36 @@
         "continuity": {
           "oneOf": [
             {"$ref": "#/$defs/sessionStarted"},
-            {"$ref": "#/$defs/checkpointRecorded"},
-            {"$ref": "#/$defs/resumeVerified"},
-            {"$ref": "#/$defs/resumeDiverged"},
-            {"$ref": "#/$defs/toolPlanned"},
-            {"$ref": "#/$defs/toolExecuted"},
+            {"$ref": "#/$defs/intentCompiled"},
+            {"$ref": "#/$defs/toolRequested"},
+            {"$ref": "#/$defs/toolCompleted"},
+            {"$ref": "#/$defs/sliceCheckpointed"},
             {"$ref": "#/$defs/splitRequested"},
-            {"$ref": "#/$defs/splitAccepted"},
-            {"$ref": "#/$defs/sliceReady"},
-            {"$ref": "#/$defs/slicePushed"}
+            {"$ref": "#/$defs/splitMaterialized"},
+            {"$ref": "#/$defs/commitCreated"},
+            {"$ref": "#/$defs/pushStarted"},
+            {"$ref": "#/$defs/pushCompleted"},
+            {"$ref": "#/$defs/resumeObserved"},
+            {"$ref": "#/$defs/resumeDecided"},
+            {"$ref": "#/$defs/snapshotRecorded"}
           ]
         }
       },
       "allOf": [
         {"if": {"properties": {"eventType": {"const": "agent.session_started"}}}, "then": {"properties": {"continuity": {"$ref": "#/$defs/sessionStarted"}}, "required": ["continuity"]}},
-        {"if": {"properties": {"eventType": {"const": "agent.checkpoint_recorded"}}}, "then": {"properties": {"continuity": {"$ref": "#/$defs/checkpointRecorded"}}, "required": ["continuity"]}},
-        {"if": {"properties": {"eventType": {"const": "agent.resume_verified"}}}, "then": {"properties": {"continuity": {"$ref": "#/$defs/resumeVerified"}}, "required": ["continuity"]}},
-        {"if": {"properties": {"eventType": {"const": "agent.resume_diverged"}}}, "then": {"properties": {"continuity": {"$ref": "#/$defs/resumeDiverged"}}, "required": ["continuity"]}},
-        {"if": {"properties": {"eventType": {"const": "agent.tool_planned"}}}, "then": {"properties": {"continuity": {"$ref": "#/$defs/toolPlanned"}}, "required": ["continuity"]}},
-        {"if": {"properties": {"eventType": {"const": "agent.tool_executed"}}}, "then": {"properties": {"continuity": {"$ref": "#/$defs/toolExecuted"}}, "required": ["continuity"]}},
+        {"if": {"properties": {"eventType": {"const": "agent.intent_compiled"}}}, "then": {"properties": {"continuity": {"$ref": "#/$defs/intentCompiled"}}, "required": ["continuity"]}},
+        {"if": {"properties": {"eventType": {"const": "agent.tool_requested"}}}, "then": {"properties": {"continuity": {"$ref": "#/$defs/toolRequested"}}, "required": ["continuity"]}},
+        {"if": {"properties": {"eventType": {"const": "agent.tool_completed"}}}, "then": {"properties": {"continuity": {"$ref": "#/$defs/toolCompleted"}}, "required": ["continuity"]}},
+        {"if": {"properties": {"eventType": {"const": "git.slice_checkpointed"}}}, "then": {"properties": {"continuity": {"$ref": "#/$defs/sliceCheckpointed"}}, "required": ["continuity"]}},
         {"if": {"properties": {"eventType": {"const": "work.split_requested"}}}, "then": {"properties": {"continuity": {"$ref": "#/$defs/splitRequested"}}, "required": ["continuity"]}},
-        {"if": {"properties": {"eventType": {"const": "work.split_accepted"}}}, "then": {"properties": {"continuity": {"$ref": "#/$defs/splitAccepted"}}, "required": ["continuity"]}},
-        {"if": {"properties": {"eventType": {"const": "git.slice_ready"}}}, "then": {"properties": {"continuity": {"$ref": "#/$defs/sliceReady"}}, "required": ["continuity"]}},
-        {"if": {"properties": {"eventType": {"const": "git.slice_pushed"}}}, "then": {"properties": {"continuity": {"$ref": "#/$defs/slicePushed"}}, "required": ["continuity"]}},
-        {"if": {"properties": {"eventType": {"not": {"enum": ["agent.session_started", "agent.checkpoint_recorded", "agent.resume_verified", "agent.resume_diverged", "agent.tool_planned", "agent.tool_executed", "work.split_requested", "work.split_accepted", "git.slice_ready", "git.slice_pushed"]}}}}, "then": {"not": {"required": ["continuity"]}}}
+        {"if": {"properties": {"eventType": {"const": "work.split_materialized"}}}, "then": {"properties": {"continuity": {"$ref": "#/$defs/splitMaterialized"}}, "required": ["continuity"]}},
+        {"if": {"properties": {"eventType": {"const": "git.commit_created"}}}, "then": {"properties": {"continuity": {"$ref": "#/$defs/commitCreated"}}, "required": ["continuity"]}},
+        {"if": {"properties": {"eventType": {"const": "git.push_started"}}}, "then": {"properties": {"continuity": {"$ref": "#/$defs/pushStarted"}}, "required": ["continuity"]}},
+        {"if": {"properties": {"eventType": {"const": "git.push_completed"}}}, "then": {"properties": {"continuity": {"$ref": "#/$defs/pushCompleted"}}, "required": ["continuity"]}},
+        {"if": {"properties": {"eventType": {"const": "agent.resume_observed"}}}, "then": {"properties": {"continuity": {"$ref": "#/$defs/resumeObserved"}}, "required": ["continuity"]}},
+        {"if": {"properties": {"eventType": {"const": "agent.resume_decided"}}}, "then": {"properties": {"continuity": {"$ref": "#/$defs/resumeDecided"}}, "required": ["continuity"]}},
+        {"if": {"properties": {"eventType": {"const": "agent.snapshot_recorded"}}}, "then": {"properties": {"continuity": {"$ref": "#/$defs/snapshotRecorded"}}, "required": ["continuity"]}},
+        {"if": {"properties": {"eventType": {"not": {"enum": ["agent.session_started", "agent.intent_compiled", "agent.tool_requested", "agent.tool_completed", "git.slice_checkpointed", "work.split_requested", "work.split_materialized", "git.commit_created", "git.push_started", "git.push_completed", "agent.resume_observed", "agent.resume_decided", "agent.snapshot_recorded"]}}}}, "then": {"not": {"required": ["continuity"]}}}
       ],
       "$defs": {
         "digest": {
@@ -340,62 +349,51 @@
           "type": "string",
           "minLength": 11,
           "maxLength": 160,
-          "pattern": "^receipt://[A-Za-z0-9._:/-]+$"
+          "pattern": "^receipt://[a-z0-9][a-z0-9.-]{0,63}(?:/[A-Za-z0-9][A-Za-z0-9._:-]{0,63}){1,8}$"
         },
         "sessionStarted": {
           "type": "object",
           "additionalProperties": false,
-          "required": ["sessionDigest", "intentDigest"],
+          "required": ["sessionDigest"],
+          "properties": {"sessionDigest": {"$ref": "#/$defs/digest"}}
+        },
+        "intentCompiled": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["sourceDigest", "intentDigest", "compilerReceiptRef"],
           "properties": {
-            "sessionDigest": {"$ref": "#/$defs/digest"},
-            "intentDigest": {"$ref": "#/$defs/digest"}
+            "sourceDigest": {"$ref": "#/$defs/digest"},
+            "intentDigest": {"$ref": "#/$defs/digest"},
+            "compilerReceiptRef": {"$ref": "#/$defs/receiptRef"}
           }
         },
-        "checkpointRecorded": {
+        "toolRequested": {
           "type": "object",
           "additionalProperties": false,
-          "required": ["checkpointDigest", "stateDigest", "checkpointReceiptRef"],
+          "required": ["intentDigest", "requestDigest"],
           "properties": {
-            "checkpointDigest": {"$ref": "#/$defs/digest"},
-            "stateDigest": {"$ref": "#/$defs/digest"},
-            "checkpointReceiptRef": {"$ref": "#/$defs/receiptRef"}
+            "intentDigest": {"$ref": "#/$defs/digest"},
+            "requestDigest": {"$ref": "#/$defs/digest"}
           }
         },
-        "resumeVerified": {
+        "toolCompleted": {
           "type": "object",
           "additionalProperties": false,
-          "required": ["checkpointDigest", "stateDigest", "verificationReceiptRef"],
+          "required": ["requestDigest", "resultDigest", "executionReceiptRef"],
           "properties": {
-            "checkpointDigest": {"$ref": "#/$defs/digest"},
-            "stateDigest": {"$ref": "#/$defs/digest"},
-            "verificationReceiptRef": {"$ref": "#/$defs/receiptRef"}
-          }
-        },
-        "resumeDiverged": {
-          "type": "object",
-          "additionalProperties": false,
-          "required": ["checkpointDigest", "expectedStateDigest", "observedStateDigest", "verificationReceiptRef"],
-          "properties": {
-            "checkpointDigest": {"$ref": "#/$defs/digest"},
-            "expectedStateDigest": {"$ref": "#/$defs/digest"},
-            "observedStateDigest": {"$ref": "#/$defs/digest"},
-            "verificationReceiptRef": {"$ref": "#/$defs/receiptRef"}
-          }
-        },
-        "toolPlanned": {
-          "type": "object",
-          "additionalProperties": false,
-          "required": ["planDigest"],
-          "properties": {"planDigest": {"$ref": "#/$defs/digest"}}
-        },
-        "toolExecuted": {
-          "type": "object",
-          "additionalProperties": false,
-          "required": ["planDigest", "resultDigest", "executionReceiptRef"],
-          "properties": {
-            "planDigest": {"$ref": "#/$defs/digest"},
+            "requestDigest": {"$ref": "#/$defs/digest"},
             "resultDigest": {"$ref": "#/$defs/digest"},
             "executionReceiptRef": {"$ref": "#/$defs/receiptRef"}
+          }
+        },
+        "sliceCheckpointed": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["sliceDigest", "validationDigests", "validationReceiptRefs"],
+          "properties": {
+            "sliceDigest": {"$ref": "#/$defs/digest"},
+            "validationDigests": {"type": "array", "minItems": 1, "maxItems": 16, "uniqueItems": true, "items": {"$ref": "#/$defs/digest"}},
+            "validationReceiptRefs": {"type": "array", "minItems": 1, "maxItems": 16, "uniqueItems": true, "items": {"$ref": "#/$defs/receiptRef"}}
           }
         },
         "splitRequested": {
@@ -407,7 +405,7 @@
             "splitPlanDigest": {"$ref": "#/$defs/digest"}
           }
         },
-        "splitAccepted": {
+        "splitMaterialized": {
           "type": "object",
           "additionalProperties": false,
           "required": ["splitPlanDigest", "acceptedWorkDigests", "splitReceiptRef"],
@@ -417,24 +415,67 @@
             "splitReceiptRef": {"$ref": "#/$defs/receiptRef"}
           }
         },
-        "sliceReady": {
+        "commitCreated": {
           "type": "object",
           "additionalProperties": false,
-          "required": ["sliceDigest", "validationDigests", "validationReceiptRefs"],
-          "properties": {
-            "sliceDigest": {"$ref": "#/$defs/digest"},
-            "validationDigests": {"type": "array", "minItems": 1, "maxItems": 16, "uniqueItems": true, "items": {"$ref": "#/$defs/digest"}},
-            "validationReceiptRefs": {"type": "array", "minItems": 1, "maxItems": 16, "uniqueItems": true, "items": {"$ref": "#/$defs/receiptRef"}}
-          }
-        },
-        "slicePushed": {
-          "type": "object",
-          "additionalProperties": false,
-          "required": ["sliceDigest", "commitDigest", "pushReceiptRef"],
+          "required": ["sliceDigest", "commitDigest", "commitReceiptRef"],
           "properties": {
             "sliceDigest": {"$ref": "#/$defs/digest"},
             "commitDigest": {"$ref": "#/$defs/digest"},
+            "commitReceiptRef": {"$ref": "#/$defs/receiptRef"}
+          }
+        },
+        "pushStarted": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["commitDigest", "pushPlanDigest", "pushStartReceiptRef"],
+          "properties": {
+            "commitDigest": {"$ref": "#/$defs/digest"},
+            "pushPlanDigest": {"$ref": "#/$defs/digest"},
+            "pushStartReceiptRef": {"$ref": "#/$defs/receiptRef"}
+          }
+        },
+        "pushCompleted": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["commitDigest", "pushPlanDigest", "remoteStateDigest", "pushReceiptRef"],
+          "properties": {
+            "commitDigest": {"$ref": "#/$defs/digest"},
+            "pushPlanDigest": {"$ref": "#/$defs/digest"},
+            "remoteStateDigest": {"$ref": "#/$defs/digest"},
             "pushReceiptRef": {"$ref": "#/$defs/receiptRef"}
+          }
+        },
+        "resumeObserved": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["snapshotDigest", "expectedStateDigest", "observedStateDigest", "observationDigest", "observationReceiptRef"],
+          "properties": {
+            "snapshotDigest": {"$ref": "#/$defs/digest"},
+            "expectedStateDigest": {"$ref": "#/$defs/digest"},
+            "observedStateDigest": {"$ref": "#/$defs/digest"},
+            "observationDigest": {"$ref": "#/$defs/digest"},
+            "observationReceiptRef": {"$ref": "#/$defs/receiptRef"}
+          }
+        },
+        "resumeDecided": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["observationDigest", "decisionDigest", "decisionReceiptRef"],
+          "properties": {
+            "observationDigest": {"$ref": "#/$defs/digest"},
+            "decisionDigest": {"$ref": "#/$defs/digest"},
+            "decisionReceiptRef": {"$ref": "#/$defs/receiptRef"}
+          }
+        },
+        "snapshotRecorded": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["snapshotDigest", "stateDigest", "snapshotReceiptRef"],
+          "properties": {
+            "snapshotDigest": {"$ref": "#/$defs/digest"},
+            "stateDigest": {"$ref": "#/$defs/digest"},
+            "snapshotReceiptRef": {"$ref": "#/$defs/receiptRef"}
           }
         },
         "diagnostic": {

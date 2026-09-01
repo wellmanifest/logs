@@ -42,7 +42,10 @@ SUBJECT_RE = re.compile(r"^[a-z][a-z0-9+.-]*:[A-Za-z0-9._:/-]+$")
 DOMAIN_TYPE_RE = re.compile(r"^(?!logs\.)[a-z][a-z0-9]*(?:\.[a-z][a-z0-9_]*)+$")
 SOURCE_RE = re.compile(r"^[a-z][a-z0-9]*(?:\.[a-z][a-z0-9_]*)*$")
 STATE_RE = re.compile(r"^[a-z][a-z0-9_]*$")
-RECEIPT_RE = re.compile(r"^receipt://[A-Za-z0-9._:/-]+$")
+RECEIPT_RE = re.compile(
+    r"^receipt://[a-z0-9][a-z0-9.-]{0,63}"
+    r"(?:/[A-Za-z0-9][A-Za-z0-9._:-]{0,63}){1,8}$"
+)
 ENDPOINT_REF_RE = re.compile(
     r"^(?:endpoint:[A-Za-z0-9._:/-]+|https?://"
     r"(?:[A-Za-z0-9](?:[A-Za-z0-9.-]{0,251}[A-Za-z0-9])?|\[[0-9A-Fa-f:.]+\])"
@@ -89,81 +92,103 @@ EXPECTED_REQUEST_GBNF = "\n".join(
 ) + "\n"
 CONTINUITY_EVENT_TYPES = (
     "agent.session_started",
-    "agent.checkpoint_recorded",
-    "agent.resume_verified",
-    "agent.resume_diverged",
-    "agent.tool_planned",
-    "agent.tool_executed",
+    "agent.intent_compiled",
+    "agent.tool_requested",
+    "agent.tool_completed",
+    "git.slice_checkpointed",
     "work.split_requested",
-    "work.split_accepted",
-    "git.slice_ready",
-    "git.slice_pushed",
+    "work.split_materialized",
+    "git.commit_created",
+    "git.push_started",
+    "git.push_completed",
+    "agent.resume_observed",
+    "agent.resume_decided",
+    "agent.snapshot_recorded",
 )
 CONTINUITY_SCHEMA_NAMES = {
     "agent.session_started": "sessionStarted",
-    "agent.checkpoint_recorded": "checkpointRecorded",
-    "agent.resume_verified": "resumeVerified",
-    "agent.resume_diverged": "resumeDiverged",
-    "agent.tool_planned": "toolPlanned",
-    "agent.tool_executed": "toolExecuted",
+    "agent.intent_compiled": "intentCompiled",
+    "agent.tool_requested": "toolRequested",
+    "agent.tool_completed": "toolCompleted",
+    "git.slice_checkpointed": "sliceCheckpointed",
     "work.split_requested": "splitRequested",
-    "work.split_accepted": "splitAccepted",
-    "git.slice_ready": "sliceReady",
-    "git.slice_pushed": "slicePushed",
+    "work.split_materialized": "splitMaterialized",
+    "git.commit_created": "commitCreated",
+    "git.push_started": "pushStarted",
+    "git.push_completed": "pushCompleted",
+    "agent.resume_observed": "resumeObserved",
+    "agent.resume_decided": "resumeDecided",
+    "agent.snapshot_recorded": "snapshotRecorded",
 }
 CONTINUITY_FIELDS = {
-    "agent.session_started": {"sessionDigest", "intentDigest"},
-    "agent.checkpoint_recorded": {
-        "checkpointDigest",
-        "stateDigest",
-        "checkpointReceiptRef",
+    "agent.session_started": {"sessionDigest"},
+    "agent.intent_compiled": {
+        "sourceDigest",
+        "intentDigest",
+        "compilerReceiptRef",
     },
-    "agent.resume_verified": {
-        "checkpointDigest",
-        "stateDigest",
-        "verificationReceiptRef",
-    },
-    "agent.resume_diverged": {
-        "checkpointDigest",
-        "expectedStateDigest",
-        "observedStateDigest",
-        "verificationReceiptRef",
-    },
-    "agent.tool_planned": {"planDigest"},
-    "agent.tool_executed": {"planDigest", "resultDigest", "executionReceiptRef"},
-    "work.split_requested": {"parentWorkDigest", "splitPlanDigest"},
-    "work.split_accepted": {
-        "splitPlanDigest",
-        "acceptedWorkDigests",
-        "splitReceiptRef",
-    },
-    "git.slice_ready": {
+    "agent.tool_requested": {"intentDigest", "requestDigest"},
+    "agent.tool_completed": {"requestDigest", "resultDigest", "executionReceiptRef"},
+    "git.slice_checkpointed": {
         "sliceDigest",
         "validationDigests",
         "validationReceiptRefs",
     },
-    "git.slice_pushed": {"sliceDigest", "commitDigest", "pushReceiptRef"},
+    "work.split_requested": {"parentWorkDigest", "splitPlanDigest"},
+    "work.split_materialized": {
+        "splitPlanDigest",
+        "acceptedWorkDigests",
+        "splitReceiptRef",
+    },
+    "git.commit_created": {"sliceDigest", "commitDigest", "commitReceiptRef"},
+    "git.push_started": {"commitDigest", "pushPlanDigest", "pushStartReceiptRef"},
+    "git.push_completed": {
+        "commitDigest",
+        "pushPlanDigest",
+        "remoteStateDigest",
+        "pushReceiptRef",
+    },
+    "agent.resume_observed": {
+        "snapshotDigest",
+        "expectedStateDigest",
+        "observedStateDigest",
+        "observationDigest",
+        "observationReceiptRef",
+    },
+    "agent.resume_decided": {
+        "observationDigest",
+        "decisionDigest",
+        "decisionReceiptRef",
+    },
+    "agent.snapshot_recorded": {"snapshotDigest", "stateDigest", "snapshotReceiptRef"},
 }
 CAUSAL_PARENT_TYPES = {
-    "agent.resume_verified": "agent.checkpoint_recorded",
-    "agent.resume_diverged": "agent.checkpoint_recorded",
-    "agent.tool_executed": "agent.tool_planned",
-    "work.split_accepted": "work.split_requested",
-    "git.slice_pushed": "git.slice_ready",
+    "agent.intent_compiled": "agent.session_started",
+    "agent.tool_requested": "agent.intent_compiled",
+    "agent.tool_completed": "agent.tool_requested",
+    "work.split_materialized": "work.split_requested",
+    "git.commit_created": "git.slice_checkpointed",
+    "git.push_started": "git.commit_created",
+    "git.push_completed": "git.push_started",
+    "agent.resume_observed": "agent.snapshot_recorded",
+    "agent.resume_decided": "agent.resume_observed",
 }
 EXPECTED_PROTO_MESSAGES = (
     "EvidenceRef",
     "DiagnosticContext",
     "AgentSessionStarted",
-    "AgentCheckpointRecorded",
-    "AgentResumeVerified",
-    "AgentResumeDiverged",
-    "AgentToolPlanned",
-    "AgentToolExecuted",
+    "AgentIntentCompiled",
+    "AgentToolRequested",
+    "AgentToolCompleted",
+    "GitSliceCheckpointed",
     "WorkSplitRequested",
-    "WorkSplitAccepted",
-    "GitSliceReady",
-    "GitSlicePushed",
+    "WorkSplitMaterialized",
+    "GitCommitCreated",
+    "GitPushStarted",
+    "GitPushCompleted",
+    "AgentResumeObserved",
+    "AgentResumeDecided",
+    "AgentSnapshotRecorded",
     "ContinuityPayload",
     "LogEvent",
     "ErrorDefinition",
@@ -188,36 +213,50 @@ EXPECTED_RPCS = (
 )
 EXPECTED_CONTINUITY_PROTO_FIELDS = (
     "string session_digest = 1;",
+    "string source_digest = 1;",
     "string intent_digest = 2;",
-    "string checkpoint_digest = 1;",
-    "string state_digest = 2;",
-    "string checkpoint_receipt_ref = 3;",
-    "string verification_receipt_ref = 3;",
-    "string expected_state_digest = 2;",
-    "string observed_state_digest = 3;",
-    "string verification_receipt_ref = 4;",
-    "string plan_digest = 1;",
-    "string result_digest = 2;",
+    "string compiler_receipt_ref = 3;",
+    "string intent_digest = 1;",
+    "string request_digest = 2;",
+    "string request_digest = 1;",
     "string execution_receipt_ref = 3;",
+    "repeated string validation_digests = 2;",
+    "repeated string validation_receipt_refs = 3;",
     "string parent_work_digest = 1;",
     "string split_plan_digest = 2;",
     "repeated string accepted_work_digests = 2;",
     "string split_receipt_ref = 3;",
+    "string commit_receipt_ref = 3;",
+    "string push_plan_digest = 2;",
+    "string push_start_receipt_ref = 3;",
+    "string remote_state_digest = 3;",
+    "string push_receipt_ref = 4;",
+    "string snapshot_digest = 1;",
+    "string expected_state_digest = 2;",
+    "string observed_state_digest = 3;",
+    "string observation_digest = 4;",
+    "string observation_receipt_ref = 5;",
+    "string observation_digest = 1;",
+    "string decision_digest = 2;",
+    "string decision_receipt_ref = 3;",
+    "string state_digest = 2;",
+    "string snapshot_receipt_ref = 3;",
     "string slice_digest = 1;",
-    "repeated string validation_digests = 2;",
-    "repeated string validation_receipt_refs = 3;",
     "string commit_digest = 2;",
-    "string push_receipt_ref = 3;",
+    "string commit_digest = 1;",
     "AgentSessionStarted agent_session_started = 1;",
-    "AgentCheckpointRecorded agent_checkpoint_recorded = 2;",
-    "AgentResumeVerified agent_resume_verified = 3;",
-    "AgentResumeDiverged agent_resume_diverged = 4;",
-    "AgentToolPlanned agent_tool_planned = 5;",
-    "AgentToolExecuted agent_tool_executed = 6;",
-    "WorkSplitRequested work_split_requested = 7;",
-    "WorkSplitAccepted work_split_accepted = 8;",
-    "GitSliceReady git_slice_ready = 9;",
-    "GitSlicePushed git_slice_pushed = 10;",
+    "AgentIntentCompiled agent_intent_compiled = 2;",
+    "AgentToolRequested agent_tool_requested = 3;",
+    "AgentToolCompleted agent_tool_completed = 4;",
+    "GitSliceCheckpointed git_slice_checkpointed = 5;",
+    "WorkSplitRequested work_split_requested = 6;",
+    "WorkSplitMaterialized work_split_materialized = 7;",
+    "GitCommitCreated git_commit_created = 8;",
+    "GitPushStarted git_push_started = 9;",
+    "GitPushCompleted git_push_completed = 10;",
+    "AgentResumeObserved agent_resume_observed = 11;",
+    "AgentResumeDecided agent_resume_decided = 12;",
+    "AgentSnapshotRecorded agent_snapshot_recorded = 13;",
 )
 
 
@@ -1043,37 +1082,46 @@ def validate_continuity(
             "continuity event references the wrong causal event type",
         )
     cause_payload = cause.get("continuity", {})
-    if event_type == "agent.resume_verified" and (
-        payload["checkpointDigest"] != cause_payload.get("checkpointDigest")
-        or payload["stateDigest"] != cause_payload.get("stateDigest")
-    ):
-        raise ContractFailure(
-            "LOGS-EVENT-CONTINUITY-DIGEST",
-            path,
-            "verified resume does not match its checkpoint digests",
-        )
-    if event_type == "agent.resume_diverged" and (
-        payload["checkpointDigest"] != cause_payload.get("checkpointDigest")
-        or payload["expectedStateDigest"] != cause_payload.get("stateDigest")
-        or payload["observedStateDigest"] == payload["expectedStateDigest"]
-    ):
-        raise ContractFailure(
-            "LOGS-EVENT-CONTINUITY-DIGEST",
-            path,
-            "diverged resume does not prove a different state from its checkpoint",
-        )
     paired_digest_fields = {
-        "agent.tool_executed": "planDigest",
-        "work.split_accepted": "splitPlanDigest",
-        "git.slice_pushed": "sliceDigest",
+        "agent.tool_requested": ("intentDigest",),
+        "agent.tool_completed": ("requestDigest",),
+        "work.split_materialized": ("splitPlanDigest",),
+        "git.commit_created": ("sliceDigest",),
+        "git.push_started": ("commitDigest",),
+        "git.push_completed": ("commitDigest", "pushPlanDigest"),
+        "agent.resume_decided": ("observationDigest",),
     }
-    paired_field = paired_digest_fields.get(event_type)
-    if paired_field is not None and payload[paired_field] != cause_payload.get(paired_field):
+    paired_fields = paired_digest_fields.get(event_type, ())
+    if any(payload[field] != cause_payload.get(field) for field in paired_fields):
         raise ContractFailure(
             "LOGS-EVENT-CONTINUITY-DIGEST",
             path,
-            "continuity event digest differs from its causal plan or slice",
+            "continuity event digest differs from its causal boundary",
         )
+    if event_type == "agent.resume_observed" and (
+        payload["snapshotDigest"] != cause_payload.get("snapshotDigest")
+        or payload["expectedStateDigest"] != cause_payload.get("stateDigest")
+    ):
+        raise ContractFailure(
+            "LOGS-EVENT-CONTINUITY-DIGEST",
+            path,
+            "resume observation does not match its recorded snapshot",
+        )
+    if event_type == "agent.resume_decided":
+        diverged = cause_payload.get("observedStateDigest") != cause_payload.get(
+            "expectedStateDigest"
+        )
+        expected_outcome = "REJECTED" if diverged else "ACCEPTED"
+        expected_state = "diverged" if diverged else "resume"
+        if (
+            event.get("outcome") != expected_outcome
+            or event.get("subjectState") != expected_state
+        ):
+            raise ContractFailure(
+                "LOGS-EVENT-CONTINUITY-DECISION",
+                path,
+                "resume decision does not match the observed snapshot state",
+            )
 
 
 def validate_event(
@@ -1650,6 +1698,14 @@ def run_self_test(source: Path) -> None:
         valid = validate_repository(baseline)
         if not valid["valid"]:
             raise AssertionError(f"baseline failed: {valid['findings']}")
+        fixture_types = [
+            json.loads(line)["eventType"]
+            for line in (baseline / "logs/continuity.jsonl").read_text("utf-8").splitlines()
+        ]
+        if set(fixture_types) != set(CONTINUITY_EVENT_TYPES) or len(fixture_types) != len(
+            CONTINUITY_EVENT_TYPES
+        ):
+            raise AssertionError("continuity fixture does not cover each declared boundary once")
 
         extra = Path(temporary) / "extra"
         copy_fixture(source, extra)
@@ -1839,6 +1895,7 @@ def run_self_test(source: Path) -> None:
             "rawPrompt",
             "rawDiff",
             "secret",
+            "path",
             "hostPath",
             "toolStdout",
             "toolStderr",
@@ -1847,12 +1904,23 @@ def run_self_test(source: Path) -> None:
             copy_fixture(source, forbidden)
             rewrite_event_at(
                 forbidden / "logs/continuity.jsonl",
-                4,
+                3,
                 lambda event, field=forbidden_field: event["continuity"].update(
                     {field: "excluded"}
                 ),
             )
             assert_invalid(forbidden, "LOGS-EVENT-CONTINUITY")
+
+        host_path_receipt = Path(temporary) / "host-path-receipt"
+        copy_fixture(source, host_path_receipt)
+        rewrite_event_at(
+            host_path_receipt / "logs/continuity.jsonl",
+            3,
+            lambda event: event["continuity"].update(
+                {"executionReceiptRef": "receipt:///home/user/tool-output"}
+            ),
+        )
+        assert_invalid(host_path_receipt, "LOGS-EVENT-CONTINUITY")
 
         wrong_cause = Path(temporary) / "wrong-continuity-cause"
         copy_fixture(source, wrong_cause)
@@ -1864,9 +1932,10 @@ def run_self_test(source: Path) -> None:
 
         resume_digest = Path(temporary) / "resume-digest"
         copy_fixture(source, resume_digest)
-        rewrite_event(
+        rewrite_event_at(
             resume_digest / "logs/continuity.jsonl",
-            lambda event: event["continuity"].update({"checkpointDigest": "f" * 64}),
+            5,
+            lambda event: event["continuity"].update({"snapshotDigest": "f" * 64}),
         )
         assert_invalid(resume_digest, "LOGS-EVENT-CONTINUITY-DIGEST")
 
@@ -1874,17 +1943,77 @@ def run_self_test(source: Path) -> None:
         copy_fixture(source, pair_digest)
         rewrite_event_at(
             pair_digest / "logs/continuity.jsonl",
-            4,
-            lambda event: event["continuity"].update({"planDigest": "e" * 64}),
+            3,
+            lambda event: event["continuity"].update({"requestDigest": "e" * 64}),
         )
         assert_invalid(pair_digest, "LOGS-EVENT-CONTINUITY-DIGEST")
+
+        for label, event_index, digest_field in (
+            ("commit-slice", 10, "sliceDigest"),
+            ("push-commit", 11, "commitDigest"),
+            ("push-completion-plan", 12, "pushPlanDigest"),
+        ):
+            publication_digest = Path(temporary) / label
+            copy_fixture(source, publication_digest)
+            rewrite_event_at(
+                publication_digest / "logs/continuity.jsonl",
+                event_index,
+                lambda event, field=digest_field: event["continuity"].update(
+                    {field: "d" * 64}
+                ),
+            )
+            assert_invalid(publication_digest, "LOGS-EVENT-CONTINUITY-DIGEST")
+
+        merged_publication = Path(temporary) / "merged-publication"
+        copy_fixture(source, merged_publication)
+        rewrite_event_at(
+            merged_publication / "logs/continuity.jsonl",
+            10,
+            lambda event: event.update({"eventType": "git.push_started"}),
+        )
+        assert_invalid(merged_publication, "LOGS-EVENT-CONTINUITY")
+
+        wrong_resume_decision = Path(temporary) / "wrong-resume-decision"
+        copy_fixture(source, wrong_resume_decision)
+        rewrite_event_at(
+            wrong_resume_decision / "logs/continuity.jsonl",
+            6,
+            lambda event: event.update({"outcome": "ACCEPTED", "subjectState": "resume"}),
+        )
+        assert_invalid(
+            wrong_resume_decision,
+            "LOGS-EVENT-CONTINUITY-DECISION",
+        )
+
+        matching_resume = Path(temporary) / "matching-resume"
+        copy_fixture(source, matching_resume)
+        matching_events = [
+            json.loads(line)
+            for line in (matching_resume / "logs/continuity.jsonl")
+            .read_text("utf-8")
+            .splitlines()
+        ]
+        expected_state = matching_events[5]["continuity"]["expectedStateDigest"]
+        rewrite_event_at(
+            matching_resume / "logs/continuity.jsonl",
+            5,
+            lambda event: event["continuity"].update(
+                {"observedStateDigest": expected_state}
+            ),
+        )
+        rewrite_event_at(
+            matching_resume / "logs/continuity.jsonl",
+            6,
+            lambda event: event.update({"outcome": "ACCEPTED", "subjectState": "resume"}),
+        )
+        assert_valid(matching_resume, "resume decision after a matching observation")
 
         generic_payload = Path(temporary) / "generic-payload"
         copy_fixture(source, generic_payload)
         rewrite_event(
             generic_payload / "logs/control.jsonl",
             lambda event: event.update(
-                {"continuity": {"sessionDigest": "1" * 64, "intentDigest": "2" * 64}}
+                {"continuity": {"sessionDigest": "1" * 64}}
             ),
         )
         assert_invalid(generic_payload, "LOGS-EVENT-CONTINUITY")
