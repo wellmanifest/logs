@@ -77,6 +77,7 @@ check closed schemas, request grammar and catalog
                         +--> evidence confinement and digest
                         +--> event type: reserved core or namespaced deployment
                         +--> mode, source, subjectState, inputHash, receiptRef
+                        +--> optional closed operational diagnostic
                         +--> event code resolves to error catalog
               |
               v
@@ -86,6 +87,13 @@ stable LOGS-VALIDATION-001 findings or PASS
 Validation is read-only and deterministic. One malformed line does not cause
 the checker to trust later chain state. The report names a safe path and rule,
 but does not echo rejected payload values.
+
+When present, `diagnostic` makes failure progression queryable without a raw
+message: phase/status, retryability, coherent attempt counters, bounded
+duration, a secret-free endpoint origin/reference, transport or HTTP status,
+runbook/error/knowledge references and optional W3C-sized trace identifiers.
+Unknown fields, credential-bearing URLs, path/query-bearing URLs and inverted
+attempt counters fail as `LOGS-EVENT-DIAGNOSTIC`.
 
 ## Protobuf and projections
 

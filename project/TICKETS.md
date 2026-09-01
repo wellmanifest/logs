@@ -12,4 +12,5 @@
 | **ticket-009** | [`README.md`](./ticket-009/README.md) | [`preprompt.md`](./ticket-009/preprompt.md) | - |  [`ai-codex.md`](./ticket-009/ai-codex.md) |  [`ai-codex-logs.txt`](./ticket-009/ai-codex-logs.txt) | [`changelog.md`](./ticket-009/changelog.md) |
 | **ticket-011** | [`README.md`](./ticket-011/README.md) | [`preprompt.md`](./ticket-011/preprompt.md) | - |  [`ai-codex.md`](./ticket-011/ai-codex.md) |  [`ai-codex-logs.txt`](./ticket-011/ai-codex-logs.txt) | [`changelog.md`](./ticket-011/changelog.md) |
 | **ticket-012** | [`README.md`](./ticket-012/README.md) | [`preprompt.md`](./ticket-012/preprompt.md) | - |  [`ai-codex.md`](./ticket-012/ai-codex.md) |  [`ai-codex-logs.txt`](./ticket-012/ai-codex-logs.txt) | [`changelog.md`](./ticket-012/changelog.md) |
+| **ticket-013** | [`README.md`](./ticket-013/README.md) | - | - | - | - | - |
 <!-- AUTO:TICKET_INDEX:END -->

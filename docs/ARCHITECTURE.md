@@ -1,9 +1,10 @@
 # Logs control-plane architecture
 
-Status: accepted v0.3 design. The v0.1 design came from `ticket-001`; `ticket-004`
-revised it against the first real deployment, and `ticket-011` added bounded
-adopter-owned error catalogs without moving runtime ownership into this
-standard (see [Deployment evidence](#deployment-evidence-c2004)).
+Status: accepted v0.4 design. The v0.1 design came from `ticket-001`; `ticket-004`
+revised it against the first real deployment, `ticket-011` added bounded
+adopter-owned error catalogs, and `ticket-013` added a closed operational
+diagnostic context without moving runtime ownership into this standard (see
+[Deployment evidence](#deployment-evidence-c2004)).
 
 ## Scope
 
@@ -81,12 +82,21 @@ object. A stream has:
 - `inputHash`, binding the canonical command input;
 - optional evidence references with exact SHA-256 digests;
 - optional `receiptRef`, null until a POA execution produced a receipt;
+- an optional closed `diagnostic` context for phase, status, retryability,
+  attempt counters, duration, endpoint origin/reference, transport/HTTP status,
+  remediation references and trace correlation;
 - `previousHash`, with 64 zeroes at genesis, and a recomputed `eventHash`;
 - explicit `rawOutputIncluded=false` and `secretMaterialIncluded=false`.
 
 There is no arbitrary payload or raw message field. This deliberately trades
 convenience for predictable review and a smaller exfiltration surface;
 `inputHash` is what keeps such an event verifiable without storing the input.
+
+`diagnostic.endpointRef` is either an opaque `endpoint:` reference or an HTTP(S)
+origin. Userinfo, paths, query strings and fragments are not representable, so
+a producer cannot accidentally persist a token-bearing request URL. Runtime
+codes and detailed procedures remain adopter-owned error/runbook references.
+The context is optional so every valid v0.1-v0.3 event remains valid in v0.4.
 
 ## Error knowledge
 
@@ -130,9 +140,16 @@ choose how to implement an admissible strategy and retain ownership of their
 codes and runbooks.
 
 Contract revisions are immutable files. Historical events continue to point
-to `contracts/logs.contract.json` v0.2 bytes; v0.3 is published separately as
-`contracts/logs.contract.v0.3.json`. A later revision adds a new file and a
-successor event instead of changing evidence referenced by existing history.
+to `contracts/logs.contract.json` v0.2 and
+`contracts/logs.contract.v0.3.json` bytes; v0.4 is published separately as
+`contracts/logs.contract.v0.4.json`, with a separately versioned Protobuf file.
+A later revision adds new files and a successor event instead of changing
+evidence referenced by existing history.
+
+The Buf module selects only the v0.4 Protobuf root. The immutable predecessor
+file remains evidence-addressable in Git outside the current compilation unit;
+compiling both would create duplicate package symbols rather than preserve
+compatibility.
 
 ## Deployment evidence (c2004)
 
@@ -183,3 +200,6 @@ than no field, because validation cannot distinguish absence from a value.
     rejection must not reserve work forever or make recovery impossible.
 14. Error identity and forbidden outcomes are standardized; implementation
     recipes remain target-owned and replaceable.
+15. Operational diagnostics are closed, bounded and secret-free: an endpoint
+    is an origin/reference, retry counters are coherent and trace IDs are
+    identifiers rather than arbitrary text.

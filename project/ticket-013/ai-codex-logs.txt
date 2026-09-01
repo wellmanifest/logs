@@ -1,0 +1,4 @@
+Bounded evidence only; raw operational payloads are intentionally excluded.
+
+- Repository validation: 1 stream, 4 events, 1 error definition
+- Conformance self-test: 24 adversarial checks passed
