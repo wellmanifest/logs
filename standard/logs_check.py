@@ -1482,7 +1482,7 @@ def run_self_test(source: Path) -> None:
                         "attempt": 1,
                         "attempts": 1,
                         "durationMs": 1,
-                        "endpointRef": "https://user:secret@example.test/login?token=secret",
+                        "endpointRef": "https://user:placeholder@example.test/login?session=placeholder",
                         "transportCode": None,
                         "httpStatus": 401,
                         "remediationRefs": [],
