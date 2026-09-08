@@ -18,6 +18,9 @@ from dataclasses import asdict, dataclass, field
 from pathlib import Path
 from typing import Any
 
+# Managed validators are read-only checks. Importing adjacent managed modules
+# must not create `__pycache__` inside the repository and turn a clean checkout
+# into an implementation diff on the next validation pass.
 _previous_bytecode_policy = sys.dont_write_bytecode
 sys.dont_write_bytecode = True
 try:
@@ -455,7 +458,7 @@ def relative_pattern_list(value: Any, *, nonempty: bool = False) -> bool:
 def delivery_limits_valid(value: dict[str, Any]) -> bool:
     return all([
         isinstance(value.get("requiredForImplementation"), bool),
-        1 <= value["maxActiveMinutes"] <= 30,
+        1 <= value["maxActiveMinutes"] <= 240,
         1 <= value["checkpointMinutes"] < value["maxActiveMinutes"],
         value["maxImplementationFiles"] >= 1,
         value["maxAffectedComponents"] >= 1,
@@ -546,8 +549,8 @@ def delivery_header_error(value: dict[str, Any]) -> str | None:
     if value.get("complexity") not in {"XS", "S", "M", "L"}:
         return "delivery complexity must be XS, S, M or L"
     minutes = value.get("estimatedMinutes")
-    if not isinstance(minutes, int) or isinstance(minutes, bool) or not 1 <= minutes <= 30:
-        return "delivery estimatedMinutes must be between 1 and 30"
+    if not isinstance(minutes, int) or isinstance(minutes, bool) or not 1 <= minutes <= 240:
+        return "delivery estimatedMinutes must be between 1 and 240"
     return None
 
 
@@ -696,11 +699,44 @@ def managed_target_bindings_error(
     return paths, None
 
 
+def target_owned_transitions_error(value: Any) -> tuple[list[str], str | None]:
+    if not isinstance(value, list):
+        return [], "delivery standardAdoption targetOwnedTransitions must be a list"
+    paths: list[str] = []
+    for transition in value:
+        if not isinstance(transition, dict) or set(transition) != {
+            "path", "baseDigest", "headDigest",
+        }:
+            return [], "delivery standardAdoption target-owned transition fields are invalid"
+        path = transition.get("path")
+        base_digest = transition.get("baseDigest")
+        head_digest = transition.get("headDigest")
+        if (
+            not isinstance(path, str)
+            or not path
+            or not relative_pattern(path)
+            or any(character in path for character in "*?[")
+        ):
+            return [], "delivery standardAdoption target-owned transition path is invalid"
+        if not all(
+            isinstance(digest, str) and re.fullmatch(r"[0-9a-f]{64}", digest) is not None
+            for digest in (base_digest, head_digest)
+        ):
+            return [], "delivery standardAdoption target-owned transition digest is invalid"
+        if base_digest == head_digest:
+            return [], "delivery standardAdoption target-owned transition digests must differ"
+        paths.append(path)
+    if len(paths) != len(set(paths)):
+        return [], "delivery standardAdoption target-owned transition paths must be unique"
+    return paths, None
+
+
 def standard_adoption_error(value: Any) -> str | None:
     required_fields = {"sourceRepository", "fromRevision", "toRevision"}
     allowed_fields = required_fields | {
         "managedTargetTakeovers",
         "managedTargetRestorations",
+        "targetOwnedTransitions",
     }
     if not isinstance(value, dict) or not required_fields <= set(value) <= allowed_fields:
         return "delivery standardAdoption fields are invalid"
@@ -731,10 +767,17 @@ def standard_adoption_error(value: Any) -> str | None:
     )
     if error:
         return error
+    transition_paths, error = target_owned_transitions_error(
+        value.get("targetOwnedTransitions", [])
+    )
+    if error:
+        return error
     if set(takeover_paths) & set(restoration_paths):
         return "delivery standardAdoption managed target paths cannot be both takeover and restoration"
-    if from_revision is None and (takeover_paths or restoration_paths):
-        return "initial standard adoption cannot declare managed target bindings"
+    if set(transition_paths) & (set(takeover_paths) | set(restoration_paths)):
+        return "delivery standardAdoption target-owned transitions cannot overlap managed target bindings"
+    if from_revision is None and (takeover_paths or restoration_paths or transition_paths):
+        return "initial standard adoption cannot declare target bindings"
     return None
 
 
@@ -1025,8 +1068,8 @@ def ticket_list_policy_valid(ticket: dict[str, Any]) -> bool:
         for name in ("activeStatuses", "nonActiveStatuses", "closedStatuses")
     ]
     return all([
-        relative_pattern_list(ticket.get("requiredFiles")),
-        relative_pattern_list(ticket.get("requiredAgentFiles")),
+        ticket.get("requiredFiles") == ["README.md", "intent.json"],
+        ticket.get("requiredAgentFiles") == [],
         string_list(ticket.get("activeStatuses"), nonempty=True),
         "nonActiveStatuses" not in ticket or string_list(ticket.get("nonActiveStatuses"), nonempty=True),
         string_list(ticket.get("closedStatuses"), nonempty=True),
@@ -1527,7 +1570,7 @@ def check_workstream_limits(
         if len(members) > limit:
             report.add(
                 "GOV-WORKSTREAM-002", f"Workstream '{workstream}' has {len(members)} active tickets; limit is {limit}.",
-                "Keep one active implementation ticket in this workstream or close/block-route the competing scope.",
+                "Keep active tickets within the configured limit, narrow scopes, or close/block-route competing work.",
                 [rel(root, member.directory) for member in members],
                 {"workstream": workstream, "tickets": [member.directory.name for member in members], "limit": limit},
             )
@@ -1596,6 +1639,55 @@ def integration_reference_valid(record: TicketRecord | None, required_workstream
     )
 
 
+def adoption_binding_registry(root: Path) -> tuple[list[str], list[str]] | None:
+    registry_path = next(
+        (
+            root / candidate
+            for candidate in (
+                ".governance/adoption-bindings.json",
+                "governance/adoption-bindings.json",
+            )
+            if (root / candidate).is_file()
+        ),
+        None,
+    )
+    if registry_path is None:
+        return None
+    try:
+        registry = load_json(registry_path)
+    except (OSError, UnicodeError, json.JSONDecodeError, TypeError, ValueError):
+        return None
+    workflow_paths = registry.get("revisionBoundWorkflowPaths")
+    target_patterns = registry.get("digestBoundTargetPatterns")
+    valid = (
+        set(registry) == {
+            "schema", "revisionBoundWorkflowPaths", "digestBoundTargetPatterns",
+        }
+        and registry.get("schema") == "new-project.adoption-bindings/v2"
+        and isinstance(workflow_paths, list)
+        and bool(workflow_paths)
+        and len(workflow_paths) == len(set(workflow_paths))
+        and all(
+            isinstance(path, str)
+            and re.fullmatch(r"[A-Za-z0-9._/-]+\.ya?ml", path) is not None
+            and relative_pattern(path)
+            for path in workflow_paths
+        )
+        and isinstance(target_patterns, list)
+        and bool(target_patterns)
+        and len(target_patterns) == len(set(target_patterns))
+        and all(
+            isinstance(pattern, str)
+            and re.fullmatch(r"\.github/workflows/[A-Za-z0-9._/*?-]+\.ya?ml", pattern) is not None
+            and relative_pattern(pattern)
+            for pattern in target_patterns
+        )
+    )
+    if not valid:
+        return None
+    return workflow_paths, target_patterns
+
+
 def atomic_adoption_binding_paths(
     root: Path,
     manifest: dict[str, Any],
@@ -1610,36 +1702,11 @@ def atomic_adoption_binding_paths(
         return set()
     bindings: set[str] = set()
     revision = adoption.get("toRevision")
-    registry_path = next(
-        (
-            root / candidate
-            for candidate in (
-                ".governance/adoption-bindings.json",
-                "governance/adoption-bindings.json",
-            )
-            if (root / candidate).is_file()
-        ),
-        None,
-    )
-    if registry_path is not None and isinstance(revision, str):
+    registry = adoption_binding_registry(root)
+    if registry is not None and isinstance(revision, str):
         try:
-            registry = load_json(registry_path)
-            workflow_paths = registry.get("revisionBoundWorkflowPaths")
-            registry_valid = (
-                set(registry) == {"schema", "revisionBoundWorkflowPaths"}
-                and registry.get("schema") == "new-project.adoption-bindings/v1"
-                and isinstance(workflow_paths, list)
-                and bool(workflow_paths)
-                and len(workflow_paths) == len(set(workflow_paths))
-                and all(
-                    isinstance(path, str)
-                    and re.fullmatch(r"[A-Za-z0-9._/-]+\.ya?ml", path) is not None
-                    and relative_pattern(path)
-                    for path in workflow_paths
-                )
-                and re.fullmatch(r"[a-f0-9]{40}", revision) is not None
-            )
-            if registry_valid:
+            workflow_paths, _target_patterns = registry
+            if re.fullmatch(r"[a-f0-9]{40}", revision) is not None:
                 uses_pattern = re.compile(
                     r"(?m)^\s*uses:\s*wellmanifest/new-project/\.github/workflows/"
                     r"governance\.yml@([a-f0-9]{40})\s*(?:#.*)?$"
@@ -1654,7 +1721,7 @@ def atomic_adoption_binding_paths(
                     content = workflow_path.read_text(encoding="utf-8")
                     if uses_pattern.findall(content) == [revision] and ref_pattern.findall(content) == [revision]:
                         bindings.add(raw_path)
-        except (OSError, UnicodeError, json.JSONDecodeError, TypeError, ValueError):
+        except (OSError, UnicodeError, TypeError, ValueError):
             pass  # Lock and ownership validation remain fail closed.
     contract_path = next(
         (
@@ -1697,6 +1764,7 @@ def check_active_relationships(
     report: Report,
 ) -> None:
     closed_statuses = set(config.get("closedStatuses", []))
+    active_statuses = set(config.get("activeStatuses", ACTIVE_DEFAULT))
     by_name = {record.directory.name: record for record in records}
     active_names = {record.directory.name for record in active}
     conflict_pairs: set[tuple[str, str]] = set()
@@ -1705,7 +1773,14 @@ def check_active_relationships(
         assert record.intent is not None
         for dependency in record.intent["dependsOn"]:
             prerequisite = by_name.get(dependency)
-            if prerequisite is None or prerequisite.status not in closed_statuses:
+            verified_terminal = bool(
+                prerequisite
+                and prerequisite.status in active_statuses
+                and dependency not in active_names
+            )
+            if prerequisite is None or (
+                prerequisite.status not in closed_statuses and not verified_terminal
+            ):
                 report.add(
                     "GOV-DEPENDENCY-002", f"Active ticket {record.directory.name} has unfinished or missing dependency {dependency}.",
                     "Complete the prerequisite or return the dependent ticket to a non-active planning backlog.",
@@ -2300,10 +2375,16 @@ def check_stacks(root: Path, manifest: dict[str, Any], profiles_path: Path | Non
             report.add("GOV-STACK-001", f"Declared stack '{stack}' has no recognized project marker.", "Add the stack marker or remove the inaccurate stack declaration.", markers)
 
 
-def check_ticket_content(root: Path, directories: list[Path], config: dict[str, Any], report: Report) -> None:
+def check_ticket_content(
+    root: Path,
+    directories: list[Path],
+    active: list[TicketRecord],
+    config: dict[str, Any],
+    report: Report,
+) -> None:
+    active_names = {record.directory.name for record in active}
     for directory in directories:
-        status, _ = parse_ticket_state(directory / "README.md")
-        if status in set(config["activeStatuses"]):
+        if directory.name in active_names:
             missing = [rel(root, directory / item) for item in config["requiredFiles"] if not (directory / item).is_file()]
             for pattern in config["requiredAgentFiles"]:
                 if not any(directory.glob(pattern)):
@@ -2755,7 +2836,7 @@ def check_integration_ownership(
         report.add(
             "GOV-ARCHITECTURE-001",
             "Responsibility or persistent-data movement is not owned by an integration slice.",
-            "Create and approve a <=30-minute integration-workstream slice before changing component ownership or persistent data.",
+            "Use an explicit integration-workstream contract before changing component ownership or persistent data.",
             [intent_path],
             {"workstream": record.intent["workstream"], "requiredWorkstream": integration_workstream},
         )
@@ -2771,18 +2852,46 @@ def check_delivery_gate(
     report: Report,
 ) -> None:
     policy = manifest.get("delivery")
-    if not isinstance(policy, dict) or not policy.get("requiredForImplementation"):
+    if not isinstance(policy, dict):
         return
     assert record.intent is not None
     delivery = record.intent.get("delivery")
     intent_path = rel(root, record.directory / manifest["ticket"]["intentFile"])
     if not isinstance(delivery, dict):
-        report.add(
-            "GOV-DELIVERY-001",
-            f"Implementation ticket {record.directory.name} has no bounded delivery contract.",
-            "Return to WAIT_FOR_APPROVAL, declare one <=30-minute XS/S outcome with architecture and validation evidence, then obtain fresh approval.",
-            [intent_path],
-        )
+        explicit_paths = [
+            path for path in implementation
+            if path in policy["dependencyManifestPaths"]
+            or matches(path, manifest["coordination"]["integration"]["requiredForPaths"])
+        ]
+        if policy.get("requiredForImplementation") or explicit_paths:
+            report.add(
+                "GOV-DELIVERY-001",
+                f"Implementation ticket {record.directory.name} needs an explicit delivery contract.",
+                "Add delivery architecture and validation evidence for the high-risk paths; routine disjoint source/test changes use the compact intent.",
+                [intent_path, *explicit_paths],
+                {"explicitContractPaths": explicit_paths},
+            )
+            return
+        public_paths = [
+            path for path in implementation
+            if matches(path, policy["publicInterfacePaths"])
+        ]
+        if (
+            len(implementation) > policy["maxImplementationFiles"]
+            or len(public_paths) > policy["maxPublicInterfaceChanges"]
+        ):
+            report.add(
+                "GOV-BUDGET-001",
+                f"Routine diff for {record.directory.name} exceeds the policy hard limit.",
+                "Narrow the change or add an explicit delivery contract; do not create tracking-only split tickets.",
+                implementation,
+                {
+                    "implementationFiles": len(implementation),
+                    "implementationFileLimit": policy["maxImplementationFiles"],
+                    "publicInterfacePaths": public_paths,
+                    "publicInterfaceLimit": policy["maxPublicInterfaceChanges"],
+                },
+            )
         return
     check_declared_delivery_budget(policy, delivery, record, intent_path, report)
     check_delivery_timebox(policy, record, intent_path, elapsed_minutes, report)
@@ -3236,6 +3345,7 @@ def package_entry(item: Any) -> tuple[str, str, str]:
     allowed_extendable = {
         ("governance/manifest.default.json", ".governance/manifest.json"),
         ("governance/required-checks.json", ".governance/required-checks.json"),
+        ("governance/ticket-allocation.json", ".governance/ticket-allocation.json"),
     }
     if item.get("strategy") == "extendable" and (
         (source, target) not in allowed_extendable or item.get("executable")
@@ -3323,6 +3433,7 @@ def load_standard_adoption_evidence(
     bool,
     dict[str, str],
     dict[str, str],
+    dict[str, tuple[str, str]],
 ]:
     base_package_content = git_revision_file(root, base, ".governance/package-manifest.json")
     base_lock_content = git_revision_file(root, base, ".governance/manifest.lock.json")
@@ -3357,6 +3468,10 @@ def load_standard_adoption_evidence(
         item["path"]: item["baseDigest"]
         for item in adoption.get("managedTargetRestorations", [])
     }
+    transitions = {
+        item["path"]: (item["baseDigest"], item["headDigest"])
+        for item in adoption.get("targetOwnedTransitions", [])
+    }
     return (
         base_strategies,
         head_strategies,
@@ -3365,6 +3480,7 @@ def load_standard_adoption_evidence(
         initial,
         takeovers,
         restorations,
+        transitions,
     )
 
 
@@ -3379,6 +3495,7 @@ def verify_changed_managed_paths(
     initial: bool,
     takeovers: dict[str, str],
     restorations: dict[str, str],
+    transitions: dict[str, tuple[str, str]],
 ) -> set[str]:
     exempt: set[str] = set()
     consumed_takeovers: set[str] = set()
@@ -3400,7 +3517,12 @@ def verify_changed_managed_paths(
                     )
                 consumed_restorations.add(raw_path)
             elif content_digest(base_content) != base_hashes[raw_path]:
-                raise ValueError(f"base managed hash differs: {raw_path}")
+                observed_digest = content_digest(base_content)
+                if takeovers.get(raw_path) != observed_digest:
+                    raise ValueError(
+                        f"base managed hash differs without matching takeover digest: {raw_path}"
+                    )
+                consumed_takeovers.add(raw_path)
         elif base_content is not None:
             if initial:
                 # Installing the standard does not erase target ownership.
@@ -3422,6 +3544,26 @@ def verify_changed_managed_paths(
             "managed target restoration declarations were not consumed: "
             + ", ".join(unused_restorations)
         )
+    registry = adoption_binding_registry(root)
+    if transitions and registry is None:
+        raise ValueError("target-owned transitions require a valid managed adoption-binding registry")
+    target_patterns = registry[1] if registry is not None else []
+    for raw_path, (base_digest, head_digest) in transitions.items():
+        if raw_path not in changed:
+            raise ValueError(f"target-owned transition declaration was not consumed: {raw_path}")
+        if raw_path in base_strategies or raw_path in head_strategies:
+            raise ValueError(f"target-owned transition overlaps a package target: {raw_path}")
+        if not matches(raw_path, target_patterns):
+            raise ValueError(f"target-owned transition path is not allowlisted: {raw_path}")
+        base_content = git_revision_file(root, base, raw_path)
+        head_path = safe_repo_path(root, raw_path)
+        if base_content is None or not head_path.is_file():
+            raise ValueError(f"target-owned transition must preserve an existing file: {raw_path}")
+        if content_digest(base_content) != base_digest:
+            raise ValueError(f"target-owned transition base hash differs: {raw_path}")
+        if content_digest(head_path.read_bytes()) != head_digest:
+            raise ValueError(f"target-owned transition head hash differs: {raw_path}")
+        exempt.add(raw_path)
     if not exempt:
         raise ValueError("no changed managed payload was verified")
     return exempt
@@ -3460,7 +3602,11 @@ def atomic_standard_adoption_paths(
         return set()
     try:
         evidence = load_standard_adoption_evidence(root, base, adoption)
-        return verify_changed_managed_paths(root, base, changed, *evidence)
+        verified_paths = verify_changed_managed_paths(root, base, changed, *evidence)
+        # The lock is verified input to the atomic adoption proof, but is not
+        # itself a package-managed payload. Keep it in the same one-ticket
+        # ownership slice instead of forcing a carrier-only companion ticket.
+        return verified_paths | {".governance/manifest.lock.json"}
     except (OSError, TypeError, ValueError, KeyError, json.JSONDecodeError) as error:
         report.add(
             "GOV-SYNC-001",
@@ -3744,7 +3890,7 @@ def run_governance_checks(
     check_domain_contracts(root, manifest, report)
     check_docker_image_references(root, manifest, report)
     check_stacks(root, manifest, profiles_path, report)
-    check_ticket_content(root, directories, manifest["ticket"], report)
+    check_ticket_content(root, directories, active, manifest["ticket"], report)
     check_coordination(root, manifest, records, changed, adoption_paths, report)
     check_change_lease(root, report)
     check_changed_content(root, changed, args.actor, args.trusted_human_change, report)

@@ -26,7 +26,7 @@
       ],
       "workstream": "integration"
     },
-    "maxActiveTicketsPerWorkstream": 1,
+    "maxActiveTicketsPerWorkstream": 4,
     "mode": "workstreams",
     "rejectActiveScopeOverlap": true,
     "workstreams": {
@@ -51,7 +51,10 @@
           "project.sh",
           "project.bat",
           "project/**",
-          "scripts/runtime.sh"
+          "scripts/runtime.sh",
+          ".gitignore",
+          ".subactor/.gitignore",
+          ".subactor/manifest.json"
         ]
       },
       "infrastructure": {
@@ -77,7 +80,12 @@
           "standard/**",
           "logs/**",
           "errors/**",
-          "docs/**"
+          "docs/**",
+          ".gitignore",
+          ".governance/manifest.json",
+          ".governance/ticket-allocation.json",
+          ".subactor/.gitignore",
+          ".subactor/manifest.json"
         ]
       },
       "interfaces": {
@@ -96,7 +104,7 @@
       "M",
       "L"
     ],
-    "checkpointMinutes": 25,
+    "checkpointMinutes": 30,
     "dependencyManifestPaths": [
       "package.json",
       "pyproject.toml",
@@ -104,7 +112,7 @@
       "Cargo.toml",
       "pom.xml"
     ],
-    "maxActiveMinutes": 30,
+    "maxActiveMinutes": 120,
     "maxAffectedComponents": 5,
     "maxImplementationFiles": 15,
     "maxPublicInterfaceChanges": 3,
@@ -189,7 +197,7 @@
   ],
   "standard": {
     "id": "wellmanifest/new-project",
-    "version": "0.19.11"
+    "version": "0.20.14"
   },
   "ticket": {
     "activeStatuses": [
@@ -211,14 +219,9 @@
       "PLAN",
       "BLOCKED"
     ],
-    "requiredAgentFiles": [
-      "ai-*.md",
-      "ai-*-logs.txt"
-    ],
+    "requiredAgentFiles": [],
     "requiredFiles": [
       "README.md",
-      "preprompt.md",
-      "changelog.md",
       "intent.json"
     ],
     "root": "project"

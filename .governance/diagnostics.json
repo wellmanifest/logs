@@ -136,6 +136,21 @@
       "remediation": "Move one ticket to BACKLOG, PLAN or BLOCKED until the conflicting work reaches a terminal state.",
       "documentation": null
     },
+    "GOV-CONTINUITY-001": {
+      "message": "A work-continuity checkpoint is malformed, unsafe or cannot preserve a dirty workspace.",
+      "remediation": "Rebuild the bounded checkpoint from observable state; commit authorized work or provide a content-addressed, secret-scanned external snapshot.",
+      "documentation": "error/GOV-WORK-CONTINUITY.md"
+    },
+    "GOV-CONTINUITY-002": {
+      "message": "The work-continuity receipt chain is stale, rebound or non-monotonic.",
+      "remediation": "Recover the complete append-only chain from the protected receipt store and extend only its latest valid checkpoint.",
+      "documentation": "error/GOV-WORK-CONTINUITY.md"
+    },
+    "GOV-CONTINUITY-003": {
+      "message": "A continuity checkpoint diverges from current repository observation.",
+      "remediation": "Preserve both states and route to reconciliation or BLOCKED; do not reset, overwrite, restore or reuse a stale fencing token.",
+      "documentation": "error/GOV-WORK-CONTINUITY.md"
+    },
     "GOV-DECISION-001": {
       "message": "A repository-changing autonomous decision lacks an append-only record or rewrites earlier evidence.",
       "remediation": "Append a new recomputable decision record; never edit an earlier record.",
@@ -266,6 +281,11 @@
       "remediation": "Restore the managed Policy DSL files or correct the selected dsl fences, then rerun the governance gate.",
       "documentation": null
     },
+    "GOV-PULL-REQUEST-STATE-001": {
+      "message": "The protected workflow cannot bind a live pull-request state to its event.",
+      "remediation": "Re-acquire the pull request through the GitHub API and retry the workflow; do not skip open-PR ticket, scope or approval enforcement.",
+      "documentation": null
+    },
     "GOV-REMEDIATION-001": {
       "message": "A diagnostic remediation intent is malformed, unresolved or semantically unsafe.",
       "remediation": "Correct the target-owned remediation-intent DSL and pass deterministic schema and semantic validation before LLM planning.",
@@ -305,6 +325,11 @@
       "message": "A ticket status is missing or not declared by the governance manifest.",
       "remediation": "Use one declared active, non-active or closed status and a compatible workflow state.",
       "documentation": null
+    },
+    "GOV-STANDARD-UPDATE-001": {
+      "message": "The pinned Wellmanifest standard cannot be verified or safely prepared during pre-commit.",
+      "remediation": "Install a compatible Goal release and use one active standard-adoption ticket to prepare, review and restage the immutable update.",
+      "documentation": "error/GOV-STANDARD-UPDATE.md"
     },
     "GOV-SYNC-001": {
       "message": "A managed governance file does not match its pinned SHA-256 digest.",
@@ -349,6 +374,16 @@
     "GOV-TICKET-ALLOCATION-002": {
       "message": "Linked worktrees assign different intents to the same ticket ID.",
       "remediation": "Stop both writers, preserve both heads and reallocate the later intent through project/new-ticket.sh before rebuilding its branch.",
+      "documentation": "error/GOV-TICKET-ALLOCATION.md"
+    },
+    "GOV-TICKET-ALLOCATION-003": {
+      "message": "A distributed writer lacks a valid receipt from the registered atomic ticket allocator.",
+      "remediation": "Submit the emitted exact request to the configured process URI and retry with its fresh fenced receipt; never choose a local number.",
+      "documentation": "error/GOV-TICKET-ALLOCATION.md"
+    },
+    "GOV-TICKET-ALLOCATION-004": {
+      "message": "A registered allocation resolves to a ticket identity already visible in repository state.",
+      "remediation": "Continue the existing claim or request a fresh fenced allocation after reconciliation; do not recreate, rename or overwrite it.",
       "documentation": "error/GOV-TICKET-ALLOCATION.md"
     },
     "GOV-TICKET-LOCK-001": {
@@ -425,6 +460,11 @@
       "message": "The worktree overlap audit could not be completed safely.",
       "remediation": "Repair repository metadata or narrow the explicit workspace root before relying on the guard.",
       "documentation": "error/GOV-WORKTREE-OVERLAP.md"
+    },
+    "GOV-BRANCH-INTENT-001": {
+      "message": "Branch intent reconciliation is incomplete, stale or invalid.",
+      "remediation": "Preserve history, reacquire the complete accepted criterion inventory and independently verified receipts at the exact source/target SHA; retain unknown work for review. Report conformance never authorizes deletion.",
+      "documentation": null
     }
   }
 }
