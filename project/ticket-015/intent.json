@@ -1,0 +1,182 @@
+{
+  "schema": "new-project.intent/v3",
+  "ticket": "ticket-015",
+  "summary": "Adopt Worktrees v5 and published governance 0.20.14",
+  "workstream": "integration",
+  "classification": {
+    "kind": "BUG",
+    "priority": "P2",
+    "origin": "requested"
+  },
+  "allowedPaths": [
+    "project/ticket-015/**",
+    ".githooks/pre-commit",
+    ".github/workflows/new-project-governance.yml",
+    ".gitignore",
+    ".governance/AGENT_DECISIONS.md",
+    ".governance/adoption-bindings.json",
+    ".governance/adoption-bindings.schema.json",
+    ".governance/branch-intent-reconciliation.schema.json",
+    ".governance/branch_intent_reconciliation.py",
+    ".governance/branch_lifecycle_check.py",
+    ".governance/diagnostics.json",
+    ".governance/docs/BRANCH_INTENT_RECONCILIATION.md",
+    ".governance/docs/LOCAL_CI_PUBLICATION.md",
+    ".governance/error/GOV-STANDARD-UPDATE.md",
+    ".governance/error/GOV-TICKET-ACTIVITY.md",
+    ".governance/error/GOV-TICKET-ALLOCATION.md",
+    ".governance/error/GOV-WORK-CONTINUITY.md",
+    ".governance/error/GOV-WORKTREE-OVERLAP.md",
+    ".governance/generate_required_checks.py",
+    ".governance/governance_check.py",
+    ".governance/intent.schema.json",
+    ".governance/manifest.base.json",
+    ".governance/manifest.json",
+    ".governance/manifest.schema.json",
+    ".governance/package-manifest.json",
+    ".governance/precommit_standard_update.py",
+    ".governance/standard-adoption.schema.json",
+    ".governance/templates/conftest-worktree-bootstrap.py",
+    ".governance/ticket-activity.json",
+    ".governance/ticket-activity.schema.json",
+    ".governance/ticket-allocation-receipt.schema.json",
+    ".governance/ticket-allocation-request.schema.json",
+    ".governance/ticket-allocation.json",
+    ".governance/ticket-allocation.schema.json",
+    ".governance/ticket_activity.py",
+    ".governance/ticket_allocation.py",
+    ".governance/work-continuity.schema.json",
+    ".governance/work_continuity.py",
+    ".governance/workspace_lifecycle_check.py",
+    ".governance/worktree_overlap_check.py",
+    ".governance/worktree_path_check.py",
+    ".governance/worktrees.lock.json",
+    ".governance/worktrees.schema.json",
+    ".subactor/.gitignore",
+    ".subactor/manifest.json",
+    "AGENTS.md",
+    "GEMINI.md",
+    "project/new-ticket.sh",
+    "scripts/install-agent-hosts.sh",
+    "worktree-guard.yaml",
+    ".governance/manifest.lock.json",
+    ".github/workflows/governance.yml"
+  ],
+  "forbiddenPaths": [
+    "project/ticket-*/user-*.md"
+  ],
+  "stacks": [],
+  "dependsOn": [],
+  "conflictsWith": [],
+  "integrationTicket": null,
+  "delivery": {
+    "acceptedBaseSha": "440fa97c0cb70128f30b63d904ec225c22e9aed3",
+    "targetBranch": "main",
+    "outcome": "Install published Worktrees 0.5.2 with canonical repository-local relative worktrees through immutable New Project 0.20.14 adoption.",
+    "nonGoals": [
+      "Do not relocate or delete existing checkouts",
+      "No product behavior or review policy changes"
+    ],
+    "complexity": "L",
+    "estimatedMinutes": 30,
+    "budgets": {
+      "maxImplementationFiles": 15,
+      "maxAffectedComponents": 1,
+      "maxPublicInterfaceChanges": 0,
+      "maxRuntimeDependencies": 0
+    },
+    "standardAdoption": {
+      "sourceRepository": "wellmanifest/new-project",
+      "fromRevision": "76667407e86d21744411e05d1257e922715b8751",
+      "toRevision": "e65857ea2f62b20e4b830e3c5f611878bf31bb25",
+      "targetOwnedTransitions": [
+        {
+          "path": ".github/workflows/governance.yml",
+          "baseDigest": "ccaf0e703188b8c52cac4cc582e413863f593d831154b280052275c3a9556873",
+          "headDigest": "eb0f023549b9c95ddaa62b7733ef57a7b88547f029d649383486f5727b1fb4ab"
+        }
+      ]
+    },
+    "architecture": {
+      "status": "accepted",
+      "decision": "Adopt published standard-owned values and compact ticket contracts, preserve target-owned extensions and historical ticket files, and explicitly route exact non-managed adoption settings to integration.",
+      "components": [
+        {
+          "name": "published-governance-adoption",
+          "paths": [
+            ".githooks/pre-commit",
+            ".github/workflows/new-project-governance.yml",
+            ".gitignore",
+            ".governance/AGENT_DECISIONS.md",
+            ".governance/adoption-bindings.json",
+            ".governance/adoption-bindings.schema.json",
+            ".governance/branch-intent-reconciliation.schema.json",
+            ".governance/branch_intent_reconciliation.py",
+            ".governance/branch_lifecycle_check.py",
+            ".governance/diagnostics.json",
+            ".governance/docs/BRANCH_INTENT_RECONCILIATION.md",
+            ".governance/docs/LOCAL_CI_PUBLICATION.md",
+            ".governance/error/GOV-STANDARD-UPDATE.md",
+            ".governance/error/GOV-TICKET-ACTIVITY.md",
+            ".governance/error/GOV-TICKET-ALLOCATION.md",
+            ".governance/error/GOV-WORK-CONTINUITY.md",
+            ".governance/error/GOV-WORKTREE-OVERLAP.md",
+            ".governance/generate_required_checks.py",
+            ".governance/governance_check.py",
+            ".governance/intent.schema.json",
+            ".governance/manifest.base.json",
+            ".governance/manifest.json",
+            ".governance/manifest.schema.json",
+            ".governance/package-manifest.json",
+            ".governance/precommit_standard_update.py",
+            ".governance/standard-adoption.schema.json",
+            ".governance/templates/conftest-worktree-bootstrap.py",
+            ".governance/ticket-activity.json",
+            ".governance/ticket-activity.schema.json",
+            ".governance/ticket-allocation-receipt.schema.json",
+            ".governance/ticket-allocation-request.schema.json",
+            ".governance/ticket-allocation.json",
+            ".governance/ticket-allocation.schema.json",
+            ".governance/ticket_activity.py",
+            ".governance/ticket_allocation.py",
+            ".governance/work-continuity.schema.json",
+            ".governance/work_continuity.py",
+            ".governance/workspace_lifecycle_check.py",
+            ".governance/worktree_overlap_check.py",
+            ".governance/worktree_path_check.py",
+            ".governance/worktrees.lock.json",
+            ".governance/worktrees.schema.json",
+            ".subactor/.gitignore",
+            ".subactor/manifest.json",
+            "AGENTS.md",
+            "GEMINI.md",
+            "project/new-ticket.sh",
+            "scripts/install-agent-hosts.sh",
+            "worktree-guard.yaml",
+            ".governance/manifest.lock.json",
+            ".github/workflows/governance.yml"
+          ]
+        }
+      ],
+      "responsibilityChanges": true,
+      "interfaceChanges": [],
+      "dataChanges": [],
+      "ui": {
+        "impact": "none",
+        "states": [],
+        "evidence": []
+      },
+      "rollback": "Revert the adoption commit; preserve existing worktrees and all unknown files."
+    },
+    "runtimeDependencies": [],
+    "validation": [
+      {
+        "criterion": "AC-01",
+        "commands": [
+          "./project/governance-check.sh --actor agent"
+        ],
+        "evidence": "Pending governed diff and repository-specific tests."
+      }
+    ]
+  }
+}

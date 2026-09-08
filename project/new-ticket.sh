@@ -8,6 +8,9 @@ USERS=""
 AGENT="antigravity"
 WORKSTREAM=""
 FORCE_NEW=false
+ALLOCATION_KEY=""
+ALLOCATION_RECEIPT=""
+REFRESH_REMOTE=false
 
 # Work classification for intent/v3. The defaults are the contract's own answer
 # for an unclassified new ticket: rule W-CLASS-006 (work-request / maintenance)
@@ -28,7 +31,11 @@ Usage: ./project/new-ticket.sh [options]
   -k, --kind KIND        Work kind; default SERVICE
   -p, --priority P       Work priority; default P2
   -o, --origin ORIGIN    Work origin; default health
+      --allocation-key K Stable Supervisor/task correlation for registered mode
+      --allocation-receipt FILE
+                          Receipt returned by the registered allocator process
       --force-new        Create a new ticket despite an unfinished ticket
+      --refresh-remote   Fetch/prune origin before allocating; local refs are used by default
   -h, --help             Show this help
 
 Accepted classification values are read from the work classification contract,
@@ -86,8 +93,22 @@ while [[ $# -gt 0 ]]; do
       ORIGIN="$2"
       shift 2
       ;;
+    --allocation-key)
+      require_value "$@"
+      ALLOCATION_KEY="$2"
+      shift 2
+      ;;
+    --allocation-receipt)
+      require_value "$@"
+      ALLOCATION_RECEIPT="$2"
+      shift 2
+      ;;
     --force-new)
       FORCE_NEW=true
+      shift
+      ;;
+    --refresh-remote)
+      REFRESH_REMOTE=true
       shift
       ;;
     -h|--help)
@@ -115,7 +136,7 @@ fi
 
 governance_manifest() {
   local candidate
-  for candidate in .governance/manifest.json governance/manifest.hub.json; do
+  for candidate in .governance/manifest.json .governance/manifest.base.json governance/manifest.hub.json; do
     if [[ -f "$candidate" ]]; then
       printf '%s' "$candidate"
       return 0
@@ -175,7 +196,7 @@ if [[ ! "$WORKSTREAM" =~ ^[a-z0-9][a-z0-9-]*$ ]]; then
   echo "Workstream id must match [a-z0-9][a-z0-9-]*" >&2
   exit 2
 fi
-if ! printf '%s\n' "$WORKSTREAM_REGISTRY" | grep -Fxq -- "$WORKSTREAM"; then
+if ! grep -Fxq -- "$WORKSTREAM" <<< "$WORKSTREAM_REGISTRY"; then
   echo "GOV-WORKSTREAM-001: workstream '$WORKSTREAM' is not declared in $GOVERNANCE_MANIFEST." >&2
   echo "  accepted: $(printf '%s' "$WORKSTREAM_REGISTRY" | tr '\n' ' ')" >&2
   exit 1
@@ -232,7 +253,7 @@ require_classification_value() {
   allowed="$(python3 -c 'import json,sys
 data = json.load(open(sys.argv[1]))
 print("\n".join(data["dimensions"][sys.argv[2]]))' "$dsl" "$dimension")"
-  if ! printf '%s\n' "$allowed" | grep -Fxq -- "$value"; then
+  if ! grep -Fxq -- "$value" <<< "$allowed"; then
     echo "GOV-CLASS-001: '$value' is not a declared $dimension in $dsl." >&2
     echo "  accepted: $(printf '%s' "$allowed" | tr '\n' ' ')" >&2
     exit 1
@@ -242,6 +263,48 @@ print("\n".join(data["dimensions"][sys.argv[2]]))' "$dsl" "$dimension")"
 require_classification_value kind "$KIND"
 require_classification_value priority "$PRIORITY"
 require_classification_value origin "$ORIGIN"
+
+allocation_config() {
+  local candidate
+  for candidate in .governance/ticket-allocation.json governance/ticket-allocation.json; do
+    if [[ -f "$candidate" ]]; then
+      printf '%s' "$candidate"
+      return 0
+    fi
+  done
+  return 1
+}
+
+allocation_runtime() {
+  local candidate
+  for candidate in .governance/ticket_allocation.py scripts/ticket_allocation.py; do
+    if [[ -f "$candidate" ]]; then
+      printf '%s' "$candidate"
+      return 0
+    fi
+  done
+  return 1
+}
+
+ALLOCATION_MODE="local-single-clone"
+ALLOCATION_CONFIG=""
+ALLOCATION_RUNTIME=""
+if ALLOCATION_CONFIG="$(allocation_config)"; then
+  if ! ALLOCATION_RUNTIME="$(allocation_runtime)"; then
+    echo "GOV-TICKET-ALLOCATION-003: ticket allocation policy exists but its managed validator is missing." >&2
+    echo "  remediation: restore the complete pinned governance package before allocating." >&2
+    exit 5
+  fi
+  if ! ALLOCATION_MODE="$(python3 "$ALLOCATION_RUNTIME" mode --config "$ALLOCATION_CONFIG")"; then
+    echo "  remediation: restore a valid managed ticket-allocation/v1 policy." >&2
+    exit 5
+  fi
+fi
+if [[ "$ALLOCATION_MODE" == "local-single-clone" && ( -n "$ALLOCATION_KEY" || -n "$ALLOCATION_RECEIPT" ) ]]; then
+  echo "GOV-TICKET-ALLOCATION-003: registered allocation inputs are forbidden in local-single-clone mode." >&2
+  echo "  remediation: remove the inputs or adopt a registered allocator policy." >&2
+  exit 5
+fi
 
 # Serialize allocation across every worktree sharing this clone. The high-water
 # mark reserves a number even before its ticket is committed and therefore
@@ -266,11 +329,12 @@ fi
 
 # The allocator owns the freshness requirement. Relying on a caller to fetch
 # recreates the same partial view that clone-wide locking is meant to avoid.
-if git rev-parse --git-dir >/dev/null 2>&1 \
+if [[ "$REFRESH_REMOTE" == true ]] \
+  && git rev-parse --git-dir >/dev/null 2>&1 \
   && git remote get-url origin >/dev/null 2>&1; then
   if ! git fetch --prune origin '+refs/heads/*:refs/remotes/origin/*' >/dev/null 2>&1; then
     echo "GOV-TICKET-LOCK-004: remote ticket refs could not be refreshed safely." >&2
-    echo "  remediation: restore origin connectivity and retry; do not allocate a number from stale refs." >&2
+    echo "  remediation: restore origin connectivity and retry, or omit --refresh-remote and rely on local refs plus protected merge collision detection." >&2
     exit 4
   fi
 fi
@@ -335,7 +399,49 @@ if [[ -n "$conflicting_ticket" && "$FORCE_NEW" != true ]]; then
   exit 3
 fi
 
-next_num=$((highest + 1))
+if [[ "$ALLOCATION_MODE" == "registered" ]]; then
+  if [[ -z "$ALLOCATION_KEY" ]]; then
+    echo "GOV-TICKET-ALLOCATION-003: registered mode requires --allocation-key from the Supervisor correlation." >&2
+    echo "  remediation: retry with the stable task correlation; never invent a local sequence." >&2
+    exit 5
+  fi
+  if ! origin_url="$(git config --get remote.origin.url 2>/dev/null)"; then
+    echo "GOV-TICKET-ALLOCATION-003: registered mode requires a canonical origin repository." >&2
+    exit 5
+  fi
+  if ! repository_ref="$(python3 "$ALLOCATION_RUNTIME" repository-ref --url "$origin_url")"; then
+    exit 5
+  fi
+  allocation_arguments=(
+    --config "$ALLOCATION_CONFIG"
+    --repository-ref "$repository_ref"
+    --allocation-key "$ALLOCATION_KEY"
+    --title "$TITLE"
+    --agent "$AGENT"
+    --workstream "$WORKSTREAM"
+    --kind "$KIND"
+    --priority "$PRIORITY"
+    --origin "$ORIGIN"
+  )
+  if [[ -z "$ALLOCATION_RECEIPT" ]]; then
+    echo "GOV-TICKET-ALLOCATION-003: registered allocation receipt is required; submit this request to the configured process URI." >&2
+    python3 "$ALLOCATION_RUNTIME" request "${allocation_arguments[@]}"
+    exit 5
+  fi
+  if ! ticket_num="$(python3 "$ALLOCATION_RUNTIME" validate "${allocation_arguments[@]}" --receipt "$ALLOCATION_RECEIPT")"; then
+    echo "  remediation: obtain a fresh receipt from the configured process URI for this exact request." >&2
+    exit 5
+  fi
+  next_num=$((10#$ticket_num))
+  if (( next_num <= highest )); then
+    echo "GOV-TICKET-ALLOCATION-004: registered ticket $ticket_num is already visible in repository state." >&2
+    echo "  remediation: continue the existing claim or request a fresh fenced allocation; do not recreate or rename it." >&2
+    exit 5
+  fi
+else
+  next_num=$((highest + 1))
+  ticket_num="$(printf '%03d' "$next_num")"
+fi
 ticket_num="$(printf '%03d' "$next_num")"
 ticket_id="ticket-$ticket_num"
 ticket_dir="project/$ticket_id"
