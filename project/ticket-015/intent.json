@@ -59,7 +59,8 @@
     "project/new-ticket.sh",
     "scripts/install-agent-hosts.sh",
     "worktree-guard.yaml",
-    ".governance/manifest.lock.json"
+    ".governance/manifest.lock.json",
+    ".github/workflows/governance.yml"
   ],
   "forbiddenPaths": [
     "project/ticket-*/user-*.md"
@@ -87,7 +88,14 @@
     "standardAdoption": {
       "sourceRepository": "wellmanifest/new-project",
       "fromRevision": "76667407e86d21744411e05d1257e922715b8751",
-      "toRevision": "e65857ea2f62b20e4b830e3c5f611878bf31bb25"
+      "toRevision": "e65857ea2f62b20e4b830e3c5f611878bf31bb25",
+      "targetOwnedTransitions": [
+        {
+          "path": ".github/workflows/governance.yml",
+          "baseDigest": "ccaf0e703188b8c52cac4cc582e413863f593d831154b280052275c3a9556873",
+          "headDigest": "eb0f023549b9c95ddaa62b7733ef57a7b88547f029d649383486f5727b1fb4ab"
+        }
+      ]
     },
     "architecture": {
       "status": "accepted",
@@ -145,7 +153,8 @@
             "project/new-ticket.sh",
             "scripts/install-agent-hosts.sh",
             "worktree-guard.yaml",
-            ".governance/manifest.lock.json"
+            ".governance/manifest.lock.json",
+            ".github/workflows/governance.yml"
           ]
         }
       ],
