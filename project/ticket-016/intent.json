@@ -1,0 +1,79 @@
+{
+  "schema": "new-project.intent/v3",
+  "ticket": "ticket-016",
+  "summary": "Document current multi-source diagnosis and private hourly logging",
+  "workstream": "integration",
+  "classification": {
+    "kind": "SERVICE",
+    "priority": "P2",
+    "origin": "requested"
+  },
+  "allowedPaths": [
+    "docs/README.md",
+    "docs/information/hourly-diagnostic-storage.md",
+    "project/ticket-016/**"
+  ],
+  "forbiddenPaths": [
+    "project/ticket-*/user-*.md"
+  ],
+  "stacks": [
+    "docker"
+  ],
+  "dependsOn": [],
+  "conflictsWith": [],
+  "integrationTicket": null,
+  "delivery": {
+    "acceptedBaseSha": "2727b2220ccfac521f98c6c464af766f2df9f63d",
+    "targetBranch": "main",
+    "outcome": "Publish accurate, evidence-linked diagnostic guidance distinguishing implemented canonical contracts, local archive validation and deployment gaps.",
+    "nonGoals": [
+      "Deploy the collector or change production autonomy",
+      "Change immutable log contracts or raw source data"
+    ],
+    "complexity": "S",
+    "estimatedMinutes": 25,
+    "budgets": {
+      "maxImplementationFiles": 2,
+      "maxAffectedComponents": 1,
+      "maxPublicInterfaceChanges": 0,
+      "maxRuntimeDependencies": 0
+    },
+    "architecture": {
+      "status": "accepted",
+      "decision": "Add canonical owner-specific information and documentation index using existing runtime evidence and immutable standard revisions.",
+      "components": [
+        {
+          "name": "diagnostic-guidance",
+          "paths": [
+            "docs/README.md",
+            "docs/information/hourly-diagnostic-storage.md"
+          ]
+        }
+      ],
+      "responsibilityChanges": false,
+      "interfaceChanges": [],
+      "dataChanges": [],
+      "ui": {
+        "impact": "none",
+        "states": [],
+        "evidence": []
+      },
+      "rollback": "Revert this documentation addition; runtime and stored evidence remain unchanged."
+    },
+    "runtimeDependencies": [],
+    "validation": [
+      {
+        "criterion": "AC-01",
+        "commands": [
+          "python3 standard/logs_check.py validate --root .",
+          "python3 standard/logs_check.py self-test",
+          "docker compose run --rm conformance",
+          "docker compose run --rm proto",
+          "./project/governance-check.sh --actor agent",
+          "git diff --check"
+        ],
+        "evidence": "Bounded validation receipt in the ticket and canonical information document."
+      }
+    ]
+  }
+}
