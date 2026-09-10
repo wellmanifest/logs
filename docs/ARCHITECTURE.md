@@ -254,3 +254,11 @@ than no field, because validation cannot distinguish absence from a value.
 17. Intent compilation, tool completion, materialized splits, commits, push
     transitions and resume decisions reference a prior event in the same
     correlation and preserve the relevant causal digest.
+18. A value retained across a phase boundary carries that phase. Invariant 9
+    separates absence from a value and says nothing about a value that is no
+    longer current, so a field carried across an attempt, cycle or phase
+    boundary must name the phase it belongs to. Without that, a reader takes it
+    for the present one. Observed 2026-09-10: a ticket kept the previous
+    attempt's provider payment error while its own timestamp advanced to the
+    new attempt, and the board reported that failure for hours after the
+    account had been funded; only an independent spend counter disproved it.
