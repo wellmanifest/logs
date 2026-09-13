@@ -1,0 +1,70 @@
+{
+  "schema": "new-project.intent/v3",
+  "ticket": "ticket-017",
+  "summary": "Name a retained value's phase in the invariants",
+  "workstream": "integration",
+  "classification": {
+    "kind": "FEATURE",
+    "priority": "P2",
+    "origin": "health"
+  },
+  "allowedPaths": [
+    "docs/ARCHITECTURE.md",
+    "project/ticket-017/**"
+  ],
+  "forbiddenPaths": [
+    "project/ticket-*/user-*.md"
+  ],
+  "stacks": [],
+  "dependsOn": [],
+  "conflictsWith": [],
+  "integrationTicket": null,
+  "delivery": {
+    "acceptedBaseSha": "86abe5aa8d54c78143d0b4ed6d040f701e3abf0d",
+    "targetBranch": "main",
+    "outcome": "The invariants name the case where a field survives a phase boundary and is then read as current, which invariant 9 does not cover because it separates absence from a value rather than a value from a stale one.",
+    "nonGoals": [
+      "No schema, event type or check changes; this is a normative statement only.",
+      "No change to invariant 9 or to any existing numbering."
+    ],
+    "complexity": "XS",
+    "estimatedMinutes": 10,
+    "budgets": {
+      "maxImplementationFiles": 1,
+      "maxAffectedComponents": 1,
+      "maxPublicInterfaceChanges": 0,
+      "maxRuntimeDependencies": 0
+    },
+    "architecture": {
+      "status": "accepted",
+      "decision": "Append as invariant 18 rather than amending 9: absence and staleness are different questions and a reader must be able to cite them separately.",
+      "components": [
+        {
+          "name": "architecture-docs",
+          "paths": [
+            "docs/ARCHITECTURE.md"
+          ]
+        }
+      ],
+      "responsibilityChanges": false,
+      "interfaceChanges": [],
+      "dataChanges": [],
+      "ui": {
+        "impact": "none",
+        "states": [],
+        "evidence": []
+      },
+      "rollback": "Remove invariant 18."
+    },
+    "runtimeDependencies": [],
+    "validation": [
+      {
+        "criterion": "AC-01",
+        "commands": [
+          "python3 standard/logs_check.py validate --root ."
+        ],
+        "evidence": "LOGS-PASS: 2 stream(s), 18 event(s), 1 error definition(s)."
+      }
+    ]
+  }
+}
