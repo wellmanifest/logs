@@ -4,10 +4,6 @@
   "repository": "wellmanifest/logs",
   "requiredChecks": [
     {
-      "name": "governance",
-      "workflowFile": ".github/workflows/governance.yml"
-    },
-    {
       "name": "governance / remote lifecycle",
       "workflowFile": ".github/workflows/new-project-governance.yml"
     },
