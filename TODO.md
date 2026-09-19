@@ -2,6 +2,7 @@
 
 ## Active work
 
+- [ ] [ticket-018](project/ticket-018/README.md) — adopt wellmanifest/new-project 0.20.32 governance package and align fleet conformance.
 - [ ] [`ticket-009`](project/ticket-009/README.md) — adopt immutable
   `wellmanifest/new-project` 0.19.9 so lifecycle and workstream vocabulary are
   resolved from dynamic governance registries. State: `IN_PROGRESS / PUBLICATION`;

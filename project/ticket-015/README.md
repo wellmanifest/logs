@@ -1,9 +1,9 @@
 # ticket-015: Adopt Worktrees v5
 
-- **Status**: IN_PROGRESS
-- **Workflow state**: PUBLICATION
+- **Status**: DONE
+- **Workflow state**: DONE
 
 SESSION_EXECUTION_AUTHORIZATION: user requested remaining Worktrees upgrades, tests and publication.
 
 - [x] AC-01: Published adoption, canonical planner and repository tests pass.
-- [ ] AC-02: Push and independently validate the exact PR head.
+- [x] AC-02: Push and independently validate the exact PR head.
