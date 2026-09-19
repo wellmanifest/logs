@@ -2,8 +2,8 @@
 
 - **ID**: ticket-016
 - **Owner**: unresolved:human
-- **Status**: IN_PROGRESS
-- **Workflow state**: EDIT
+- **Status**: DONE
+- **Workflow state**: DONE
 - **Created**: 2026-09-09
 
 ## Goal and scope
@@ -14,7 +14,7 @@ Canonical result: [diagnostic guidance](../../docs/information/hourly-diagnostic
 
 ## Acceptance criteria
 
-- [ ] AC-01: Indexed, source-bound guidance describes storage, coverage, LLM context and actual validation/deployment status; repository checks are recorded.
+- [x] AC-01: Indexed, source-bound guidance describes storage, coverage, LLM context and actual validation/deployment status; repository checks are recorded.
 
 ## Boundaries
 
