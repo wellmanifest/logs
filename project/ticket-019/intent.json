@@ -1,0 +1,76 @@
+{
+  "schema": "new-project.intent/v3",
+  "ticket": "ticket-019",
+  "summary": "Resolve stale IN_PROGRESS ticket activity via git-ancestry override",
+  "workstream": "governance",
+  "classification": {
+    "kind": "SERVICE",
+    "priority": "P2",
+    "origin": "health"
+  },
+  "allowedPaths": [
+    "project/ticket-019/**",
+    "TODO.md",
+    "project/TICKETS.md",
+    ".governance/ticket-activity.override.json"
+  ],
+  "forbiddenPaths": [
+    "project/ticket-*/user-*.md"
+  ],
+  "stacks": [],
+  "dependsOn": [],
+  "conflictsWith": [],
+  "integrationTicket": null,
+  "delivery": {
+    "acceptedBaseSha": "8374d5364e5c78ae69806fb60a06aa52cd23d1e3",
+    "targetBranch": "main",
+    "outcome": "Merged tickets with stale IN_PROGRESS projections resolve inactive via Git ancestry, restoring a green governance gate on main.",
+    "nonGoals": [
+      "No changes to ticket content, statuses or history",
+      "No managed file edits",
+      "No product/runtime changes"
+    ],
+    "complexity": "S",
+    "estimatedMinutes": 20,
+    "budgets": {
+      "maxImplementationFiles": 4,
+      "maxAffectedComponents": 1,
+      "maxPublicInterfaceChanges": 0,
+      "maxRuntimeDependencies": 0
+    },
+    "architecture": {
+      "status": "accepted",
+      "decision": "Add the target-owned ticket-activity override selecting git-ancestry missingPolicy; delivery evidence on main replaces absent clone-local receipts.",
+      "components": [
+        {
+          "name": "managed-governance-package",
+          "paths": [
+            ".governance/ticket-activity.override.json",
+            "project/**",
+            "TODO.md"
+          ]
+        }
+      ],
+      "responsibilityChanges": false,
+      "interfaceChanges": [],
+      "dataChanges": [],
+      "ui": {
+        "impact": "none",
+        "states": [],
+        "evidence": []
+      },
+      "rollback": "Remove the override file to restore status-projection resolution."
+    },
+    "validation": [
+      {
+        "criterion": "AC-01",
+        "commands": [
+          "./project/governance-check.sh",
+          "python3 .governance/ticket_activity.py resolve --ticket-dir project/ticket-018 --active-status IN_PROGRESS"
+        ],
+        "evidence": "Gate passes; merged tickets resolve inactive."
+      }
+    ],
+    "runtimeDependencies": []
+  }
+}
