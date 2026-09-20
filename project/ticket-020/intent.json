@@ -1,0 +1,75 @@
+{
+  "schema": "new-project.intent/v3",
+  "ticket": "ticket-020",
+  "summary": "Pin the legacy governance wrapper to adopted new-project 0.20.32",
+  "workstream": "infrastructure",
+  "classification": {
+    "kind": "SERVICE",
+    "priority": "P2",
+    "origin": "health"
+  },
+  "allowedPaths": [
+    "project/ticket-020/**",
+    "TODO.md",
+    "project/TICKETS.md",
+    ".github/workflows/governance.yml"
+  ],
+  "forbiddenPaths": [
+    "project/ticket-*/user-*.md"
+  ],
+  "stacks": [],
+  "dependsOn": [],
+  "conflictsWith": [],
+  "integrationTicket": null,
+  "delivery": {
+    "acceptedBaseSha": "f2a3f885ec26b218b3e8e3b53c4edc34792bac24",
+    "targetBranch": "main",
+    "outcome": "The push-time governance gate runs the adopted 0.20.32 reusable workflow instead of the stale pre-adoption pin.",
+    "nonGoals": [
+      "No managed file edits",
+      "No workflow logic changes",
+      "No product/runtime changes"
+    ],
+    "complexity": "S",
+    "estimatedMinutes": 15,
+    "budgets": {
+      "maxImplementationFiles": 4,
+      "maxAffectedComponents": 1,
+      "maxPublicInterfaceChanges": 0,
+      "maxRuntimeDependencies": 0
+    },
+    "architecture": {
+      "status": "accepted",
+      "decision": "Update the unpinned wrapper reference to the revision recorded by ticket-018 adoption.",
+      "components": [
+        {
+          "name": "ci-wrapper",
+          "paths": [
+            ".github/workflows/governance.yml",
+            "project/**",
+            "TODO.md"
+          ]
+        }
+      ],
+      "responsibilityChanges": false,
+      "interfaceChanges": [],
+      "dataChanges": [],
+      "ui": {
+        "impact": "none",
+        "states": [],
+        "evidence": []
+      },
+      "rollback": "Restore the previous pin."
+    },
+    "runtimeDependencies": [],
+    "validation": [
+      {
+        "criterion": "AC-01",
+        "commands": [
+          "./project/governance-check.sh"
+        ],
+        "evidence": "Gate passes and the push run uses the adopted standard."
+      }
+    ]
+  }
+}
