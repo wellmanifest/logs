@@ -1698,10 +1698,11 @@ def run_self_test(source: Path) -> None:
         valid = validate_repository(baseline)
         if not valid["valid"]:
             raise AssertionError(f"baseline failed: {valid['findings']}")
-        fixture_types = [
-            json.loads(line)["eventType"]
-            for line in (baseline / "logs/continuity.jsonl").read_text("utf-8").splitlines()
-        ]
+        with (baseline / "logs/continuity.jsonl").open(encoding="utf-8") as handle:
+            fixture_types = [
+                json.loads(line)["eventType"]
+                for line in handle.read(MAX_ADOPTED_SCHEMA_BYTES).splitlines()
+            ]
         if set(fixture_types) != set(CONTINUITY_EVENT_TYPES) or len(fixture_types) != len(
             CONTINUITY_EVENT_TYPES
         ):
