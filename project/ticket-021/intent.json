@@ -1,0 +1,73 @@
+{
+  "schema": "new-project.intent/v3",
+  "ticket": "ticket-021",
+  "summary": "Use bounded file read for continuity fixture in logs_check",
+  "workstream": "integration",
+  "classification": {
+    "kind": "SERVICE",
+    "priority": "P2",
+    "origin": "health"
+  },
+  "allowedPaths": [
+    "project/ticket-021/**",
+    "TODO.md",
+    "project/TICKETS.md",
+    "standard/logs_check.py",
+    ".governance/standard-adoption.json"
+  ],
+  "forbiddenPaths": [
+    "project/ticket-*/user-*.md"
+  ],
+  "stacks": [],
+  "dependsOn": [],
+  "conflictsWith": [],
+  "integrationTicket": null,
+  "delivery": {
+    "acceptedBaseSha": "cd9d9558e09b9135ef92712096eb951fd524aa75",
+    "targetBranch": "main",
+    "outcome": "Replace unbounded read_text on logs/continuity.jsonl in run_self_test with a bounded file read and align .governance/standard-adoption.json.",
+    "nonGoals": [
+      "No breaking CLI or schema changes"
+    ],
+    "complexity": "S",
+    "estimatedMinutes": 15,
+    "budgets": {
+      "maxImplementationFiles": 1,
+      "maxAffectedComponents": 1,
+      "maxPublicInterfaceChanges": 0,
+      "maxRuntimeDependencies": 0
+    },
+    "architecture": {
+      "status": "accepted",
+      "decision": "Read logs/continuity.jsonl with handle.read(MAX_ADOPTED_SCHEMA_BYTES) inside a context manager in standard/logs_check.py.",
+      "components": [
+        {
+          "name": "logs-check",
+          "paths": [
+            "standard/logs_check.py"
+          ]
+        }
+      ],
+      "responsibilityChanges": false,
+      "interfaceChanges": [],
+      "dataChanges": [],
+      "ui": {
+        "impact": "none",
+        "states": [],
+        "evidence": []
+      },
+      "rollback": "Revert bounded read in standard/logs_check.py."
+    },
+    "runtimeDependencies": [],
+    "validation": [
+      {
+        "criterion": "AC-01",
+        "commands": [
+          "python3 standard/logs_check.py self-test",
+          "./project/governance-check.sh"
+        ],
+        "evidence": "All tests, standard_pack_check, and governance checks pass with 0 findings."
+      }
+    ]
+  }
+}
