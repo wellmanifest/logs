@@ -216,3 +216,5 @@ A policy filter may return `retry-later`, `degraded`, `no-change` or
 `escalation-required`; those are valid exits, not governance failures. It must
 not reinterpret ERROR as success, prescribe one hardcoded recovery command or
 reserve work forever after independently verifiable terminal evidence exists.
+
+Readiness and work-result receipts must record `deployment_executed: false` when execution exits via `escalation-required` or `capability_unavailable`, never conflating terminal ticket completion with goal success.

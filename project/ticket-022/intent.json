@@ -1,0 +1,71 @@
+{
+  "schema": "new-project.intent/v3",
+  "ticket": "ticket-022",
+  "summary": "P2: Specify readiness and work-result evidence without conflating completion with goal success (#31)",
+  "workstream": "integration",
+  "classification": {
+    "kind": "SERVICE",
+    "priority": "P2",
+    "origin": "health"
+  },
+  "allowedPaths": [
+    "project/ticket-022/**",
+    "TODO.md",
+    "project/TICKETS.md",
+    "docs/LOGIC_FLOW.md"
+  ],
+  "forbiddenPaths": [
+    "project/ticket-*/user-*.md"
+  ],
+  "stacks": [],
+  "dependsOn": [],
+  "conflictsWith": [],
+  "integrationTicket": null,
+  "delivery": {
+    "acceptedBaseSha": "dc77ed622877b5cfcefaad2e666acdfc33369332",
+    "targetBranch": "main",
+    "outcome": "P2: Specify readiness and work-result evidence without conflating completion with goal success (#31)",
+    "nonGoals": [
+      "No changes outside declared allowedPaths."
+    ],
+    "complexity": "S",
+    "estimatedMinutes": 20,
+    "budgets": {
+      "maxImplementationFiles": 1,
+      "maxAffectedComponents": 1,
+      "maxPublicInterfaceChanges": 0,
+      "maxRuntimeDependencies": 0
+    },
+    "architecture": {
+      "status": "accepted",
+      "decision": "P2: Specify readiness and work-result evidence without conflating completion with goal success (#31)",
+      "components": [
+        {
+          "name": "ticket-scope",
+          "paths": [
+            "docs/LOGIC_FLOW.md"
+          ]
+        }
+      ],
+      "responsibilityChanges": false,
+      "interfaceChanges": [],
+      "dataChanges": [],
+      "ui": {
+        "impact": "none",
+        "states": [],
+        "evidence": []
+      },
+      "rollback": "Revert the ticket commit."
+    },
+    "runtimeDependencies": [],
+    "validation": [
+      {
+        "criterion": "AC-01",
+        "commands": [
+          "./project/governance-check.sh"
+        ],
+        "evidence": "project/ticket-022/README.md"
+      }
+    ]
+  }
+}
