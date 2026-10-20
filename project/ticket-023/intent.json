@@ -1,0 +1,75 @@
+{
+  "schema": "new-project.intent/v3",
+  "ticket": "ticket-023",
+  "summary": "Refresh implemented logging standard documentation",
+  "workstream": "governance",
+  "classification": {
+    "kind": "SERVICE",
+    "priority": "P2",
+    "origin": "requested"
+  },
+  "allowedPaths": [
+    "project/ticket-023/**",
+    "TODO.md",
+    "project/TICKETS.md",
+    "CHANGELOG.md",
+    "README.md"
+  ],
+  "forbiddenPaths": [
+    "project/ticket-*/user-*.md"
+  ],
+  "stacks": [],
+  "dependsOn": [],
+  "conflictsWith": [],
+  "integrationTicket": null,
+  "delivery": {
+    "acceptedBaseSha": "4638065ed4c3fa3cdd49a12cc1957f8540006914",
+    "targetBranch": "main",
+    "outcome": "Replace stale bootstrap documentation with implemented v0.5 logging contracts and current validation commands.",
+    "nonGoals": [
+      "No contract, checker, dependency, deployment or historical event changes."
+    ],
+    "complexity": "XS",
+    "estimatedMinutes": 10,
+    "budgets": {
+      "maxImplementationFiles": 2,
+      "maxAffectedComponents": 1,
+      "maxPublicInterfaceChanges": 0,
+      "maxRuntimeDependencies": 0
+    },
+    "architecture": {
+      "status": "accepted",
+      "decision": "Keep the root README as the logging standard entry point and link the existing canonical documentation.",
+      "components": [
+        {
+          "name": "logging-documentation",
+          "paths": [
+            "README.md",
+            "CHANGELOG.md"
+          ]
+        }
+      ],
+      "responsibilityChanges": false,
+      "interfaceChanges": [],
+      "dataChanges": [],
+      "ui": {
+        "impact": "none",
+        "states": [],
+        "evidence": []
+      },
+      "rollback": "Revert the documentation commit."
+    },
+    "runtimeDependencies": [],
+    "validation": [
+      {
+        "criterion": "AC-01",
+        "commands": [
+          "python3 standard/logs_check.py validate --root .",
+          "python3 standard/logs_check.py self-test",
+          "./project/governance-check.sh"
+        ],
+        "evidence": "Willman exact-command task receipts outside Git."
+      }
+    ]
+  }
+}
