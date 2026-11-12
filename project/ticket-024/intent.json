@@ -1,0 +1,84 @@
+{
+  "schema": "new-project.intent/v3",
+  "ticket": "ticket-024",
+  "summary": "Modularize and harden logs conformance checker",
+  "workstream": "integration",
+  "classification": {
+    "kind": "SERVICE",
+    "priority": "P2",
+    "origin": "health"
+  },
+  "allowedPaths": [
+    "project/ticket-024/**",
+    "TODO.md",
+    "project/TICKETS.md",
+    "standard/**"
+  ],
+  "forbiddenPaths": [
+    "project/ticket-*/user-*.md"
+  ],
+  "stacks": [],
+  "dependsOn": [],
+  "conflictsWith": [],
+  "integrationTicket": null,
+  "delivery": {
+    "acceptedBaseSha": "615b222e0cff51a684397105616b1d58a3885a57",
+    "targetBranch": "main",
+    "outcome": "Modularize standard/logs_check.py (2,271 lines) into <500-line cohesive modules under standard/ and harden strict JSON, O_NOFOLLOW/FIFO-safe bounded reads, lexical symlink-ancestor confinement, endpoint port/IPv6 checks, and unit test coverage.",
+    "nonGoals": [
+      "No changes to pinned contract bundles, Protobuf schemas, or existing JSONL streams"
+    ],
+    "complexity": "L",
+    "estimatedMinutes": 45,
+    "budgets": {
+      "maxImplementationFiles": 10,
+      "maxAffectedComponents": 2,
+      "maxPublicInterfaceChanges": 0,
+      "maxRuntimeDependencies": 0
+    },
+    "architecture": {
+      "status": "accepted",
+      "decision": "Factor standard/logs_check.py into logs_primitives.py, logs_subvalidators.py, logs_contract.py, logs_adoption.py, logs_events.py, logs_selftest_fixtures.py, logs_selftest.py, and test_logs_hardening.py while keeping standard/logs_check.py as the backward-compatible CLI and re-export facade.",
+      "components": [
+        {
+          "name": "logs-conformance",
+          "paths": [
+            "standard/__init__.py",
+            "standard/logs_check.py",
+            "standard/logs_primitives.py",
+            "standard/logs_subvalidators.py",
+            "standard/logs_contract.py",
+            "standard/logs_adoption.py",
+            "standard/logs_events.py",
+            "standard/logs_selftest_fixtures.py",
+            "standard/logs_selftest.py",
+            "standard/test_logs_hardening.py"
+          ]
+        }
+      ],
+      "responsibilityChanges": false,
+      "interfaceChanges": [],
+      "dataChanges": [],
+      "ui": {
+        "impact": "none",
+        "states": [],
+        "evidence": []
+      },
+      "rollback": "Revert ticket-024 commit on standard/**."
+    },
+    "runtimeDependencies": [],
+    "validation": [
+      {
+        "criterion": "AC-01",
+        "commands": [
+          "ruff check --no-cache standard",
+          "python3 standard/logs_check.py validate --root .",
+          "python3 standard/logs_check.py self-test",
+          "python3 -m unittest discover -s standard -p 'test_*.py'",
+          "./project/governance-check.sh --base origin/main"
+        ],
+        "evidence": "All Python files under standard/ are <500 lines after formatting, Ruff reports 0 issues, all conformance/unit tests and governance gates pass."
+      }
+    ]
+  }
+}
