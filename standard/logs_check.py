@@ -99,6 +99,11 @@ from standard.logs_subvalidators import (
     validate_continuity,
     validate_diagnostic,
 )
+from standard.urtlog_bridge_check import (
+    URTLOG_BRIDGE_PROFILE_PATH,
+    URTLOG_BRIDGE_SCHEMA_PATH,
+    validate_urtlog_bridge_profile,
+)
 
 __all__ = [
     "ACTOR_RE",
@@ -139,6 +144,8 @@ __all__ = [
     "SUBJECT_RE",
     "TRACE_ID_RE",
     "TRANSPORT_CODE_RE",
+    "URTLOG_BRIDGE_PROFILE_PATH",
+    "URTLOG_BRIDGE_SCHEMA_PATH",
     "ZERO_HASH",
     "ContractFailure",
     "Finding",
@@ -176,6 +183,7 @@ __all__ = [
     "validate_repository",
     "validate_request",
     "validate_streams",
+    "validate_urtlog_bridge_profile",
     "write_adopter_error_fixture",
 ]
 
@@ -221,6 +229,13 @@ def build_parser() -> argparse.ArgumentParser:
     error_adoption.add_argument("--root", type=Path, default=Path("."))
     error_adoption.add_argument("--catalog", type=Path, required=True)
     error_adoption.add_argument("--format", choices=("text", "json"), default="text")
+    urtlog_bridge = subparsers.add_parser(
+        "urtlog-bridge",
+        help="validate a wellmanifest.logs/urtlog-bridge-profile/v1 profile",
+    )
+    urtlog_bridge.add_argument("--root", type=Path, default=Path("."))
+    urtlog_bridge.add_argument("--profile", type=Path, default=None)
+    urtlog_bridge.add_argument("--format", choices=("text", "json"), default="text")
     subparsers.add_parser("self-test", help="run positive and adversarial conformance")
     return parser
 
@@ -265,6 +280,18 @@ def main(argv: list[str] | None = None) -> int:
                 "LOGS-ERROR-ADOPTION-PASS: "
                 f"{result['errorDefinitionsChecked']} error definition(s) match "
                 f"canonical contract {result['contractSha256']}"
+            )
+        else:
+            _print_findings(result["findings"])
+        return 0 if result["valid"] else 1
+    if args.command == "urtlog-bridge":
+        result = validate_urtlog_bridge_profile(root, args.profile)
+        if args.format == "json":
+            print(json.dumps(result, indent=2, sort_keys=True))
+        elif result["valid"]:
+            print(
+                "LOGS-URTLOG-BRIDGE-PASS: profile matches schema "
+                f"{result['schemaSha256']}"
             )
         else:
             _print_findings(result["findings"])

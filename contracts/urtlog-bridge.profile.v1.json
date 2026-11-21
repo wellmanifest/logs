@@ -1,0 +1,88 @@
+{
+  "$schema": "./urtlog-bridge.schema.v1.json",
+  "schema": "wellmanifest.logs/urtlog-bridge-profile/v1",
+  "version": "1.0.0",
+  "placement": {
+    "home": "wellmanifest",
+    "shape": "domain_pack",
+    "runtimeImplementations": [
+      "uritime/urtlog",
+      "semcod/planfile",
+      "oqllm/proxy",
+      "heyasa/heyasa",
+      "heyasa/willmux",
+      "heyasa/willgui"
+    ],
+    "adopt": [
+      "wellmanifest/logs",
+      "wellmanifest/llm",
+      "wellmanifest/docs"
+    ]
+  },
+  "packaging": {
+    "extraName": "urtlog",
+    "requirement": "uritime-urtlog>=0.3.0",
+    "mandatoryRuntimeDependency": false,
+    "lazyImportModule": "urtlog",
+    "optInEnvVar": "URTLOG_STATE_DIR",
+    "failOpenOnMissingOrError": true,
+    "mutateTrackedRepoFiles": false
+  },
+  "temporalModel": {
+    "tuple": [
+      "URT",
+      "URI",
+      "URN_IN",
+      "URN_OUT"
+    ],
+    "planKind": "intent",
+    "logKind": "event",
+    "planNeverSucceeded": true,
+    "planGrantsAuthority": false,
+    "allowedEventStatuses": [
+      "planned",
+      "started",
+      "succeeded",
+      "failed",
+      "unknown",
+      "canceled"
+    ],
+    "blockedStateMapping": {
+      "eventStatus": "unknown",
+      "logType": "audit",
+      "metadataStatusField": "status",
+      "metadataStatusValue": "blocked"
+    },
+    "dagLinkFields": [
+      "causation_id",
+      "depends_on",
+      "input_urns",
+      "output_urns"
+    ]
+  },
+  "registry": {
+    "supportedKinds": [
+      "uri",
+      "url",
+      "urn"
+    ],
+    "secretsInUrlsOrFixtures": false,
+    "accessContextFailClosed": true,
+    "payloadStorage": "urn-vault-separated"
+  },
+  "decisionContextSlice": {
+    "targetRole": "decision",
+    "maxSliceBytes": 600,
+    "lookupMode": "btree-prefix-or-single-urn",
+    "singleUrnIsolationForEntityQueries": true,
+    "forbidUnfilteredDump": true,
+    "grantsExecutionAuthority": false
+  },
+  "verification": {
+    "requireOfflineFailOpenTests": true,
+    "requireLiveIntegrationTests": true,
+    "forbidPytestMarkSkip": true,
+    "optionalDependencyGuard": "in-body-find-spec",
+    "forbidSecretLikeTestLiterals": true
+  }
+}

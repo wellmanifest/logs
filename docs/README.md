@@ -1,6 +1,7 @@
 # Logging documentation
 
 - [Hourly diagnostic storage](information/hourly-diagnostic-storage.md) — current contract status, private source archives, UTC rotation, coverage and bounded LLM evidence.
+- [Opt-in URTLog bridge and decision slicing](information/urtlog-bridge-and-decision-slicing.md) — closed `wellmanifest.logs/urtlog-bridge-profile/v1` contract for opt-in `uritime/urtlog` telemetry bridges, `UnifiedRegistry`, `blocked -> unknown/audit` status mapping, and `<= 600` B small-LLM decision slicing.
 - [Control-plane architecture](ARCHITECTURE.md) — canonical events, diagnostics, continuity and adopter-owned errors.
 - [Logic flow](LOGIC_FLOW.md) — planning, validation and execution boundaries.
 
