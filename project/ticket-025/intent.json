@@ -1,0 +1,105 @@
+{
+  "schema": "new-project.intent/v3",
+  "ticket": "ticket-025",
+  "summary": "Extend wellmanifest/logs with opt-in urtlog bridge and decision-slicing profile",
+  "workstream": "integration",
+  "classification": {
+    "kind": "FEATURE",
+    "priority": "P2",
+    "origin": "health"
+  },
+  "allowedPaths": [
+    "project/ticket-025/**",
+    "TODO.md",
+    "project/TICKETS.md",
+    "contracts/urtlog-bridge.schema.v1.json",
+    "contracts/urtlog-bridge.profile.v1.json",
+    "standard/urtlog_bridge_check.py",
+    "standard/logs_check.py",
+    "standard/test_urtlog_bridge_check.py",
+    "docs/information/urtlog-bridge-and-decision-slicing.md",
+    "docs/README.md"
+  ],
+  "forbiddenPaths": [
+    "project/ticket-*/user-*.md",
+    "contracts/logs.contract.json",
+    "contracts/logs.contract.v0.3.json",
+    "contracts/logs.contract.v0.4.json",
+    "contracts/logs.contract.v0.5.json",
+    "proto/**"
+  ],
+  "stacks": [],
+  "dependsOn": [],
+  "conflictsWith": [],
+  "integrationTicket": null,
+  "delivery": {
+    "acceptedBaseSha": "b5c8790cdf3c25142264727a6b57ff6780279af7",
+    "targetBranch": "main",
+    "outcome": "Add closed JSON schema, reference profile, dependency-free conformance checker, adversarial unit tests, and normative documentation for opt-in uritime/urtlog telemetry bridges, UnifiedRegistry projections, and compact small-LLM decision slicing without altering immutable v0.2-v0.5 contracts.",
+    "nonGoals": [
+      "No edits to immutable v0.2-v0.5 contracts, proto/v0.5, or historical logs/*.jsonl streams",
+      "No runtime collector or storage daemon added to wellmanifest/logs"
+    ],
+    "complexity": "M",
+    "estimatedMinutes": 35,
+    "budgets": {
+      "maxImplementationFiles": 8,
+      "maxAffectedComponents": 3,
+      "maxPublicInterfaceChanges": 1,
+      "maxRuntimeDependencies": 0
+    },
+    "architecture": {
+      "status": "accepted",
+      "decision": "Extend wellmanifest/logs additively with contracts/urtlog-bridge.schema.v1.json, contracts/urtlog-bridge.profile.v1.json, standard/urtlog_bridge_check.py (wired into logs_check.py as the 'urtlog-bridge' subcommand), adversarial tests in standard/test_urtlog_bridge_check.py, and docs/information/urtlog-bridge-and-decision-slicing.md.",
+      "components": [
+        {
+          "name": "urtlog-bridge-contract",
+          "paths": [
+            "contracts/urtlog-bridge.schema.v1.json",
+            "contracts/urtlog-bridge.profile.v1.json"
+          ]
+        },
+        {
+          "name": "urtlog-bridge-conformance",
+          "paths": [
+            "standard/urtlog_bridge_check.py",
+            "standard/logs_check.py",
+            "standard/test_urtlog_bridge_check.py"
+          ]
+        },
+        {
+          "name": "urtlog-bridge-docs",
+          "paths": [
+            "docs/information/urtlog-bridge-and-decision-slicing.md",
+            "docs/README.md"
+          ]
+        }
+      ],
+      "responsibilityChanges": false,
+      "interfaceChanges": [
+        "Additive 'urtlog-bridge' subcommand in standard/logs_check.py"
+      ],
+      "dataChanges": [],
+      "ui": {
+        "impact": "none",
+        "states": [],
+        "evidence": []
+      },
+      "rollback": "Revert ticket-025 commit."
+    },
+    "runtimeDependencies": [],
+    "validation": [
+      {
+        "criterion": "AC-01",
+        "commands": [
+          "python3 standard/logs_check.py urtlog-bridge --root .",
+          "python3 standard/logs_check.py validate --root .",
+          "python3 standard/logs_check.py self-test",
+          "python3 -m unittest discover -s standard -p 'test_*.py'",
+          "./project/governance-check.sh --base origin/main"
+        ],
+        "evidence": "All existing logs conformance checks, new urtlog-bridge profile checks, adversarial unit tests, wellmanifest/docs checks, and governance gates pass."
+      }
+    ]
+  }
+}
