@@ -152,3 +152,28 @@ Validate the bundled schema and reference profile (or an adopter's profile) via:
 python3 standard/logs_check.py urtlog-bridge --root .
 python3 standard/logs_check.py urtlog-bridge --root . --profile /path/to/profile.json --format json
 ```
+
+<!-- docs:section limitations -->
+## Limitations
+
+1. `logs_check.py urtlog-bridge` validates profile structure, bounds, and
+   invariants deterministically without inspecting an adopter's live Python
+   runtime or SQLite store; runtime opt-in and fail-open behavior remain verified
+   by each adopter's offline and live integration test suite.
+2. The 2026-11-21 A/B/C benchmark evidence was measured on a single local
+   `oqllm-proxy` instance (`d1:3b`) over 7 blind-option scenarios; larger models
+   may tolerate larger slices but still benefit from prefix/single-URN scoping.
+3. Adopting this profile does not modify immutable v0.2–v0.5 canonical event
+   contracts or grant execution, review, or merge authority.
+
+<!-- docs:section next_actions -->
+## Next actions
+
+1. Adopters integrating `uritime-urtlog` pin `contracts/urtlog-bridge.profile.v1.json`
+   and run `python3 standard/logs_check.py urtlog-bridge --root .` in local checks
+   alongside their offline/live bridge test suite.
+2. Align small-model decision routing budgets (`<= 600` B) with `wellmanifest/llm`
+   `limits.maxDecisionSliceBytes` during runtime canary rollouts.
+3. Review this document by `2026-12-21` after production `URTLOG_STATE_DIR`
+   canary telemetry is collected across `planfile`, `oqllm-proxy`, `willgui`,
+   and `heyasa`.
