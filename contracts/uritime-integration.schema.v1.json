@@ -1,0 +1,325 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://wellmanifest.dev/schemas/logs/uritime-integration-profile.v1.json",
+  "title": "wellmanifest/logs Uritime, URT, and URTLog Project Integration Profile v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "$schema",
+    "schema",
+    "version",
+    "extendsProfile",
+    "placement",
+    "temporalOwnership",
+    "packaging",
+    "dualModeTelemetry",
+    "storageDurability",
+    "resilienceAndAdmission",
+    "decisionModelRuntime",
+    "ecosystemBoundaries",
+    "verification"
+  ],
+  "properties": {
+    "$schema": {
+      "const": "./uritime-integration.schema.v1.json"
+    },
+    "schema": {
+      "const": "wellmanifest.logs/uritime-integration-profile/v1"
+    },
+    "version": {
+      "type": "string",
+      "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$"
+    },
+    "extendsProfile": {
+      "const": "wellmanifest.logs/urtlog-bridge-profile/v1"
+    },
+    "placement": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "home",
+        "shape",
+        "runtimeImplementations",
+        "adopt"
+      ],
+      "properties": {
+        "home": { "const": "wellmanifest" },
+        "shape": { "const": "domain_pack" },
+        "runtimeImplementations": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 24,
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "pattern": "^[a-z0-9-]+/[a-z0-9-]+$"
+          }
+        },
+        "adopt": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 16,
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "pattern": "^wellmanifest/[a-z0-9-]+$"
+          }
+        }
+      }
+    },
+    "temporalOwnership": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "soleTimeOwner",
+        "forbidCompetingScheduler",
+        "horizons",
+        "requireExplicitAwareUtcNow",
+        "freezeMaterializerConfig",
+        "targetIdentityMode",
+        "requireOccurrenceIdDeduplication",
+        "requireGenerationBoundFreshness"
+      ],
+      "properties": {
+        "soleTimeOwner": { "const": "uritime" },
+        "forbidCompetingScheduler": { "const": true },
+        "horizons": {
+          "type": "array",
+          "minItems": 4,
+          "maxItems": 4,
+          "prefixItems": [
+            { "const": "H0_REFLEX" },
+            { "const": "H1_TACTICAL" },
+            { "const": "H2_OPERATIONAL" },
+            { "const": "H3_ETERNAL" }
+          ],
+          "items": false
+        },
+        "requireExplicitAwareUtcNow": { "const": true },
+        "freezeMaterializerConfig": { "const": true },
+        "targetIdentityMode": { "const": "uuid-and-generation" },
+        "requireOccurrenceIdDeduplication": { "const": true },
+        "requireGenerationBoundFreshness": { "const": true }
+      }
+    },
+    "packaging": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "uritimeExtraName",
+        "urtlogExtraName",
+        "mandatoryRuntimeDependency",
+        "lazyImportModules",
+        "optInEnvVars",
+        "failOpenOnMissingOrError",
+        "mutateTrackedRepoFiles"
+      ],
+      "properties": {
+        "uritimeExtraName": { "const": "uritime" },
+        "urtlogExtraName": { "const": "urtlog" },
+        "mandatoryRuntimeDependency": { "const": false },
+        "lazyImportModules": {
+          "type": "array",
+          "minItems": 3,
+          "maxItems": 3,
+          "uniqueItems": true,
+          "items": {
+            "enum": ["uritime", "uritime_urt", "urtlog"]
+          }
+        },
+        "optInEnvVars": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 8,
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "pattern": "^[A-Z][A-Z0-9_]+$"
+          }
+        },
+        "failOpenOnMissingOrError": { "const": true },
+        "mutateTrackedRepoFiles": { "const": false }
+      }
+    },
+    "dualModeTelemetry": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "forbidLogOnlyAdoption",
+        "requirePlanBeforeEffect",
+        "requireCausationLink",
+        "requireAccessAudit",
+        "planGrantsAuthority",
+        "allowedEventStatuses",
+        "blockedStateMapping"
+      ],
+      "properties": {
+        "forbidLogOnlyAdoption": { "const": true },
+        "requirePlanBeforeEffect": { "const": true },
+        "requireCausationLink": { "const": true },
+        "requireAccessAudit": { "const": true },
+        "planGrantsAuthority": { "const": false },
+        "allowedEventStatuses": {
+          "type": "array",
+          "minItems": 6,
+          "maxItems": 6,
+          "uniqueItems": true,
+          "items": {
+            "enum": [
+              "planned",
+              "started",
+              "succeeded",
+              "failed",
+              "unknown",
+              "canceled"
+            ]
+          }
+        },
+        "blockedStateMapping": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "eventStatus",
+            "logType",
+            "metadataStatusField",
+            "metadataStatusValue"
+          ],
+          "properties": {
+            "eventStatus": { "const": "unknown" },
+            "logType": { "const": "audit" },
+            "metadataStatusField": { "const": "status" },
+            "metadataStatusValue": { "const": "blocked" }
+          }
+        }
+      }
+    },
+    "storageDurability": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "requireCrossProcessLock",
+        "requireFsyncAtomicReplace",
+        "cleanupTempOnError",
+        "sqliteJournalMode",
+        "sqliteBusyRetryMaxAttempts"
+      ],
+      "properties": {
+        "requireCrossProcessLock": { "const": true },
+        "requireFsyncAtomicReplace": { "const": true },
+        "cleanupTempOnError": { "const": true },
+        "sqliteJournalMode": { "const": "WAL" },
+        "sqliteBusyRetryMaxAttempts": {
+          "type": "integer",
+          "minimum": 2,
+          "maximum": 8
+        }
+      }
+    },
+    "resilienceAndAdmission": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "separateTransientFromPermanentFailures",
+        "hostAdmissionSignal",
+        "forbidLoadavgOnlyAdmission",
+        "externalReadRetryMaxAttempts",
+        "abstentionBackoffRequired"
+      ],
+      "properties": {
+        "separateTransientFromPermanentFailures": { "const": true },
+        "hostAdmissionSignal": { "const": "psi-and-runnable-contention" },
+        "forbidLoadavgOnlyAdmission": { "const": true },
+        "externalReadRetryMaxAttempts": {
+          "type": "integer",
+          "minimum": 2,
+          "maximum": 5
+        },
+        "abstentionBackoffRequired": { "const": true }
+      }
+    },
+    "decisionModelRuntime": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "targetRole",
+        "maxSliceBytes",
+        "requireModelAliasNormalization",
+        "requireLiveUrtlogBriefInjection",
+        "singleUrnIsolationForEntityQueries",
+        "forbidUnfilteredDump",
+        "advisoryOnly",
+        "executionAllowed",
+        "readOnlyEffects"
+      ],
+      "properties": {
+        "targetRole": { "const": "decision" },
+        "maxSliceBytes": {
+          "type": "integer",
+          "minimum": 128,
+          "maximum": 1024
+        },
+        "requireModelAliasNormalization": { "const": true },
+        "requireLiveUrtlogBriefInjection": { "const": true },
+        "singleUrnIsolationForEntityQueries": { "const": true },
+        "forbidUnfilteredDump": { "const": true },
+        "advisoryOnly": { "const": true },
+        "executionAllowed": { "const": false },
+        "readOnlyEffects": {
+          "type": "array",
+          "minItems": 2,
+          "maxItems": 5,
+          "uniqueItems": true,
+          "items": {
+            "enum": ["pure", "read", "query", "fs:read", "docker:read"]
+          }
+        }
+      }
+    },
+    "ecosystemBoundaries": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "polycellRole",
+        "autonomSynthesisTrigger",
+        "autonomExecutesUnpromotedCandidate",
+        "forgeRole",
+        "controllerRole",
+        "validatorRole",
+        "grantsExecutionAuthority",
+        "grantsLeaseAuthority",
+        "grantsMergeAuthority"
+      ],
+      "properties": {
+        "polycellRole": { "const": "pure-deterministic-classifier" },
+        "autonomSynthesisTrigger": { "const": "NO_MATCH_ONLY" },
+        "autonomExecutesUnpromotedCandidate": { "const": false },
+        "forgeRole": { "const": "isolated-candidate-qualification" },
+        "controllerRole": { "const": "lease-fenced-execution" },
+        "validatorRole": { "const": "independent-exact-head-approval-and-merge" },
+        "grantsExecutionAuthority": { "const": false },
+        "grantsLeaseAuthority": { "const": false },
+        "grantsMergeAuthority": { "const": false }
+      }
+    },
+    "verification": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "requireOfflineFailOpenTests",
+        "requireLiveIntegrationTests",
+        "requireConcurrentWriteTests",
+        "forbidPytestMarkSkip",
+        "optionalDependencyGuard",
+        "forbidSecretLikeTestLiterals"
+      ],
+      "properties": {
+        "requireOfflineFailOpenTests": { "const": true },
+        "requireLiveIntegrationTests": { "const": true },
+        "requireConcurrentWriteTests": { "const": true },
+        "forbidPytestMarkSkip": { "const": true },
+        "optionalDependencyGuard": { "const": "in-body-find-spec" },
+        "forbidSecretLikeTestLiterals": { "const": true }
+      }
+    }
+  }
+}

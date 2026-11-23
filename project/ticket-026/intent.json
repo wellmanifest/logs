@@ -1,0 +1,111 @@
+{
+  "schema": "new-project.intent/v3",
+  "ticket": "ticket-026",
+  "summary": "Extend wellmanifest/logs with uritime project integration profile and guide",
+  "workstream": "integration",
+  "classification": {
+    "kind": "FEATURE",
+    "priority": "P2",
+    "origin": "requested"
+  },
+  "allowedPaths": [
+    "project/ticket-026/**",
+    "TODO.md",
+    "project/TICKETS.md",
+    "contracts/uritime-integration.profile.v1.json",
+    "contracts/uritime-integration.schema.v1.json",
+    "docs/README.md",
+    "docs/information/uritime-project-integration.md",
+    "standard/logs_check.py",
+    "standard/logs_selftest.py",
+    "standard/test_uritime_integration_check.py",
+    "standard/uritime_integration_check.py"
+  ],
+  "forbiddenPaths": [
+    "project/ticket-*/user-*.md",
+    "contracts/logs.contract.json",
+    "contracts/logs.contract.v0.3.json",
+    "contracts/logs.contract.v0.4.json",
+    "contracts/logs.contract.v0.5.json",
+    "contracts/urtlog-bridge.schema.v1.json",
+    "contracts/urtlog-bridge.profile.v1.json",
+    "proto/**"
+  ],
+  "stacks": [],
+  "dependsOn": [],
+  "conflictsWith": [],
+  "integrationTicket": null,
+  "delivery": {
+    "acceptedBaseSha": "45b9672c3ae413f3b05af5c90986c478a899e3b3",
+    "targetBranch": "main",
+    "outcome": "Add closed JSON schema, reference profile, dependency-free conformance checker wired into logs_check.py and logs_selftest.py, adversarial unit tests, and normative information guide specifying how projects adopt and integrate uritime, uritime-urt, and uritime-urtlog across Polycell, Autonom, Forge, and Autonomy controllers.",
+    "nonGoals": [
+      "No edits to immutable v0.2-v0.5 contracts, urtlog-bridge.schema/profile v1, proto/v0.5, or historical logs/*.jsonl streams",
+      "No runtime scheduler, storage daemon, README.md, or CHANGELOG.md changes"
+    ],
+    "complexity": "M",
+    "estimatedMinutes": 40,
+    "budgets": {
+      "maxImplementationFiles": 8,
+      "maxAffectedComponents": 3,
+      "maxPublicInterfaceChanges": 1,
+      "maxRuntimeDependencies": 0
+    },
+    "architecture": {
+      "status": "accepted",
+      "decision": "Extend wellmanifest/logs additively with contracts/uritime-integration.schema.v1.json, contracts/uritime-integration.profile.v1.json, standard/uritime_integration_check.py (wired into logs_check.py as 'uritime-integration' and exercised in logs_selftest.py), adversarial tests in standard/test_uritime_integration_check.py, and docs/information/uritime-project-integration.md.",
+      "components": [
+        {
+          "name": "uritime-integration-contract",
+          "paths": [
+            "contracts/uritime-integration.schema.v1.json",
+            "contracts/uritime-integration.profile.v1.json"
+          ]
+        },
+        {
+          "name": "uritime-integration-conformance",
+          "paths": [
+            "standard/uritime_integration_check.py",
+            "standard/logs_check.py",
+            "standard/logs_selftest.py",
+            "standard/test_uritime_integration_check.py"
+          ]
+        },
+        {
+          "name": "uritime-integration-docs",
+          "paths": [
+            "docs/information/uritime-project-integration.md",
+            "docs/README.md"
+          ]
+        }
+      ],
+      "responsibilityChanges": false,
+      "interfaceChanges": [
+        "Additive 'uritime-integration' subcommand in standard/logs_check.py"
+      ],
+      "dataChanges": [],
+      "ui": {
+        "impact": "none",
+        "states": [],
+        "evidence": []
+      },
+      "rollback": "Revert ticket-026 commit."
+    },
+    "runtimeDependencies": [],
+    "validation": [
+      {
+        "criterion": "AC-01",
+        "commands": [
+          "python3 standard/logs_check.py uritime-integration --root .",
+          "python3 standard/logs_check.py urtlog-bridge --root .",
+          "python3 standard/logs_check.py validate --root .",
+          "python3 standard/logs_check.py self-test",
+          "python3 -m unittest discover -s standard -p 'test_*.py' -v",
+          "./project/governance-check.sh --base origin/main",
+          "wellman check --root ."
+        ],
+        "evidence": "All existing logs conformance checks, new uritime-integration profile checks, self-test adversarial checks, unit tests, wellmanifest/docs checks, wellman check, and governance gates pass."
+      }
+    ]
+  }
+}
