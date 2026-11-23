@@ -1,0 +1,131 @@
+{
+  "$schema": "./uritime-integration.schema.v1.json",
+  "schema": "wellmanifest.logs/uritime-integration-profile/v1",
+  "version": "1.0.0",
+  "extendsProfile": "wellmanifest.logs/urtlog-bridge-profile/v1",
+  "placement": {
+    "home": "wellmanifest",
+    "shape": "domain_pack",
+    "runtimeImplementations": [
+      "uritime/uritime",
+      "uritime/urt",
+      "uritime/urtlog",
+      "uritime/autonom",
+      "uritime/autodo",
+      "heyasa/heyasa",
+      "heyasa/willman",
+      "semcod/planfile",
+      "oqllm/proxy",
+      "subactor/coding-agent"
+    ],
+    "adopt": [
+      "wellmanifest/logs",
+      "wellmanifest/llm",
+      "wellmanifest/autonomy",
+      "wellmanifest/poa",
+      "wellmanifest/polycell",
+      "wellmanifest/docs"
+    ]
+  },
+  "temporalOwnership": {
+    "soleTimeOwner": "uritime",
+    "forbidCompetingScheduler": true,
+    "horizons": [
+      "H0_REFLEX",
+      "H1_TACTICAL",
+      "H2_OPERATIONAL",
+      "H3_ETERNAL"
+    ],
+    "requireExplicitAwareUtcNow": true,
+    "freezeMaterializerConfig": true,
+    "targetIdentityMode": "uuid-and-generation",
+    "requireOccurrenceIdDeduplication": true,
+    "requireGenerationBoundFreshness": true
+  },
+  "packaging": {
+    "uritimeExtraName": "uritime",
+    "urtlogExtraName": "urtlog",
+    "mandatoryRuntimeDependency": false,
+    "lazyImportModules": [
+      "uritime",
+      "uritime_urt",
+      "urtlog"
+    ],
+    "optInEnvVars": [
+      "URTLOG_STATE_DIR"
+    ],
+    "failOpenOnMissingOrError": true,
+    "mutateTrackedRepoFiles": false
+  },
+  "dualModeTelemetry": {
+    "forbidLogOnlyAdoption": true,
+    "requirePlanBeforeEffect": true,
+    "requireCausationLink": true,
+    "requireAccessAudit": true,
+    "planGrantsAuthority": false,
+    "allowedEventStatuses": [
+      "planned",
+      "started",
+      "succeeded",
+      "failed",
+      "unknown",
+      "canceled"
+    ],
+    "blockedStateMapping": {
+      "eventStatus": "unknown",
+      "logType": "audit",
+      "metadataStatusField": "status",
+      "metadataStatusValue": "blocked"
+    }
+  },
+  "storageDurability": {
+    "requireCrossProcessLock": true,
+    "requireFsyncAtomicReplace": true,
+    "cleanupTempOnError": true,
+    "sqliteJournalMode": "WAL",
+    "sqliteBusyRetryMaxAttempts": 4
+  },
+  "resilienceAndAdmission": {
+    "separateTransientFromPermanentFailures": true,
+    "hostAdmissionSignal": "psi-and-runnable-contention",
+    "forbidLoadavgOnlyAdmission": true,
+    "externalReadRetryMaxAttempts": 3,
+    "abstentionBackoffRequired": true
+  },
+  "decisionModelRuntime": {
+    "targetRole": "decision",
+    "maxSliceBytes": 600,
+    "requireModelAliasNormalization": true,
+    "requireLiveUrtlogBriefInjection": true,
+    "singleUrnIsolationForEntityQueries": true,
+    "forbidUnfilteredDump": true,
+    "advisoryOnly": true,
+    "executionAllowed": false,
+    "readOnlyEffects": [
+      "pure",
+      "read",
+      "query",
+      "fs:read",
+      "docker:read"
+    ]
+  },
+  "ecosystemBoundaries": {
+    "polycellRole": "pure-deterministic-classifier",
+    "autonomSynthesisTrigger": "NO_MATCH_ONLY",
+    "autonomExecutesUnpromotedCandidate": false,
+    "forgeRole": "isolated-candidate-qualification",
+    "controllerRole": "lease-fenced-execution",
+    "validatorRole": "independent-exact-head-approval-and-merge",
+    "grantsExecutionAuthority": false,
+    "grantsLeaseAuthority": false,
+    "grantsMergeAuthority": false
+  },
+  "verification": {
+    "requireOfflineFailOpenTests": true,
+    "requireLiveIntegrationTests": true,
+    "requireConcurrentWriteTests": true,
+    "forbidPytestMarkSkip": true,
+    "optionalDependencyGuard": "in-body-find-spec",
+    "forbidSecretLikeTestLiterals": true
+  }
+}

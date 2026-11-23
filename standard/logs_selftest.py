@@ -14,6 +14,8 @@ from standard import logs_events as _e
 from standard import logs_primitives as _p
 from standard import logs_selftest_fixtures as _f
 from standard import logs_subvalidators as _s
+from standard import uritime_integration_check as _ui
+from standard import urtlog_bridge_check as _ub
 
 
 def _check_core_and_diagnostic_cases(source: Path, temporary: Path) -> None:
@@ -436,10 +438,52 @@ def _check_docs_requests_and_adoption(source: Path, temporary: Path) -> None:
     _f.assert_error_adoption_invalid(source, extra_catalog, "LOGS-DOC-CATALOG")
 
 
+def _check_uritime_profiles(source: Path, temporary: Path) -> None:
+    bridge_ok = _ub.validate_urtlog_bridge_profile(source)
+    if not bridge_ok["valid"]:
+        raise AssertionError(f"urtlog-bridge baseline failed: {bridge_ok['findings']}")
+    integ_ok = _ui.validate_uritime_integration_profile(source)
+    if not integ_ok["valid"]:
+        raise AssertionError(
+            f"uritime-integration baseline failed: {integ_ok['findings']}"
+        )
+
+    base_profile = json.loads(
+        (source / _ui.URITIME_INTEGRATION_PROFILE_PATH).read_text(encoding="utf-8")
+    )
+    for label, mutator, expected_rule in (
+        (
+            "log-only",
+            lambda p: p["dualModeTelemetry"].update({"forbidLogOnlyAdoption": False}),
+            "LOGS-URITIME-TELEMETRY",
+        ),
+        (
+            "exec-auth",
+            lambda p: p["ecosystemBoundaries"].update({"grantsExecutionAuthority": True}),
+            "LOGS-URITIME-AUTHORITY",
+        ),
+        (
+            "no-lock",
+            lambda p: p["storageDurability"].update({"requireCrossProcessLock": False}),
+            "LOGS-URITIME-STORAGE",
+        ),
+    ):
+        cand = copy.deepcopy(base_profile)
+        mutator(cand)
+        prof_path = temporary / f"uritime-bad-{label}.json"
+        prof_path.write_text(json.dumps(cand), encoding="utf-8")
+        res = _ui.validate_uritime_integration_profile(source, prof_path)
+        if res["valid"] or res["findings"][0]["rule"] != expected_rule:
+            raise AssertionError(
+                f"adversarial uritime-integration case {label!r} produced {res}"
+            )
+
+
 def run_self_test(source: Path) -> None:
     with tempfile.TemporaryDirectory(prefix="wellmanifest-logs-") as raw_tmp:
         temporary = Path(raw_tmp)
         _check_core_and_diagnostic_cases(source, temporary)
         _check_continuity_cases(source, temporary)
         _check_docs_requests_and_adoption(source, temporary)
+        _check_uritime_profiles(source, temporary)
     print("logs conformance self-test: PASS (continuity and adversarial checks)")

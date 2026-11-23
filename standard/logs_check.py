@@ -104,6 +104,11 @@ from standard.urtlog_bridge_check import (
     URTLOG_BRIDGE_SCHEMA_PATH,
     validate_urtlog_bridge_profile,
 )
+from standard.uritime_integration_check import (
+    URITIME_INTEGRATION_PROFILE_PATH,
+    URITIME_INTEGRATION_SCHEMA_PATH,
+    validate_uritime_integration_profile,
+)
 
 __all__ = [
     "ACTOR_RE",
@@ -146,6 +151,8 @@ __all__ = [
     "TRANSPORT_CODE_RE",
     "URTLOG_BRIDGE_PROFILE_PATH",
     "URTLOG_BRIDGE_SCHEMA_PATH",
+    "URITIME_INTEGRATION_PROFILE_PATH",
+    "URITIME_INTEGRATION_SCHEMA_PATH",
     "ZERO_HASH",
     "ContractFailure",
     "Finding",
@@ -183,6 +190,7 @@ __all__ = [
     "validate_repository",
     "validate_request",
     "validate_streams",
+    "validate_uritime_integration_profile",
     "validate_urtlog_bridge_profile",
     "write_adopter_error_fixture",
 ]
@@ -236,6 +244,13 @@ def build_parser() -> argparse.ArgumentParser:
     urtlog_bridge.add_argument("--root", type=Path, default=Path("."))
     urtlog_bridge.add_argument("--profile", type=Path, default=None)
     urtlog_bridge.add_argument("--format", choices=("text", "json"), default="text")
+    uritime_integration = subparsers.add_parser(
+        "uritime-integration",
+        help="validate a wellmanifest.logs/uritime-integration-profile/v1 profile",
+    )
+    uritime_integration.add_argument("--root", type=Path, default=Path("."))
+    uritime_integration.add_argument("--profile", type=Path, default=None)
+    uritime_integration.add_argument("--format", choices=("text", "json"), default="text")
     subparsers.add_parser("self-test", help="run positive and adversarial conformance")
     return parser
 
@@ -291,6 +306,18 @@ def main(argv: list[str] | None = None) -> int:
         elif result["valid"]:
             print(
                 "LOGS-URTLOG-BRIDGE-PASS: profile matches schema "
+                f"{result['schemaSha256']}"
+            )
+        else:
+            _print_findings(result["findings"])
+        return 0 if result["valid"] else 1
+    if args.command == "uritime-integration":
+        result = validate_uritime_integration_profile(root, args.profile)
+        if args.format == "json":
+            print(json.dumps(result, indent=2, sort_keys=True))
+        elif result["valid"]:
+            print(
+                "LOGS-URITIME-INTEGRATION-PASS: profile matches schema "
                 f"{result['schemaSha256']}"
             )
         else:
